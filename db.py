@@ -24,12 +24,10 @@ class Database:
         with self.connection:
            return self.cursor.execute("UPDATE users SET user_id = ? WHERE phone = ?",(user_id, phone))
     
-    def get_signup(self,user_id):
+    def get_full(self,user_id): #Проверка заполнены ли все данные.
         with self.connection:
-            result = self.cursor.execute ("SELECT 'signup' FROM 'users' WHERE 'user_id' = ?", (user_id,)).fetchall()
-            for row in result:
-                signup = str(row[0])
-            return signup
+            result = self.cursor.execute (f"SELECT full FROM users WHERE user_id = '{user_id}'").fetchone() 
+            return result[0]
 
 
     def set_signup(self, user_id, signup):

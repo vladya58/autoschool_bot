@@ -1,5 +1,5 @@
 #6132924794:AAEGdkuvbN_lOCnlThLVFHCPwvNKafdgmic
-
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.filters import Text
 import logging
@@ -8,8 +8,8 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 class UserState(StatesGroup):
-    user_id = State()
-    phone = State()
+    name = State()
+    
 
 
 
@@ -21,7 +21,7 @@ first_name = "User"
 balance = 0
 
 bot = Bot(token='6132924794:AAEGdkuvbN_lOCnlThLVFHCPwvNKafdgmic')
-dp = Dispatcher(bot)
+dp = Dispatcher(bot,storage=MemoryStorage())
 
  #message.answer(text="Вы уже авторизованы.", show_alert=True) 
 
@@ -35,7 +35,7 @@ async def cmd_start(message: types.Message):
          
         keyboard = types.ReplyKeyboardMarkup()
         button_phone = types.KeyboardButton(text="Отправить номер телефона", request_contact=True)
-        cancel_phone = types.KeyboardButton(text="Отмена")
+        cancel_phone = types.KeyboardButton(text="Отклонить")
         keyboard.add(button_phone,cancel_phone)
         await message.answer("Для авторизации нам нужен Ваш номер телефона.",reply_markup=keyboard)
     else:
@@ -45,14 +45,14 @@ async def cmd_start(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentType.CONTACT) #Еще нужна обработка отмены отправки контакта.
 async def get_auto(message: types.Message, state: FSMContext):
-    if db.phone_exists(message.contact.phone_number):
-        db.set_user_id(message.contact.user_id,message.contact.phone_number)
+    if db.phone_exists(message.contact.phone_number.replace("+", "")):
+        db.set_user_id(message.contact.user_id,message.contact.phone_number.replace("+", ""))
 
-        await message.answer(f"Твой номер успешно авторизован. Для более дальнейшей регистрации заполни данные в личном кабинете. Используй команду /menu. {message.contact.phone_number}", reply_markup=types.ReplyKeyboardRemove())
+        await message.answer(f"Твой номер успешно авторизован. Для дальнейшей регистрации заполни данные в личном кабинете. Используй команду /menu.", reply_markup=types.ReplyKeyboardRemove())
     else:
         await message.answer("К сожалению Вас нет в списках студентов. Обратитесь по номер 8 800 555 3535", reply_markup=types.ReplyKeyboardRemove())
 
-@dp.message_handler(Text(equals="Отмена"))
+@dp.message_handler(Text(equals="Отклонить"))
 @dp.message_handler(commands=['menu']) #Явно указываем в декораторе, на какую команду реагируем. 
 async def cmd_menu(message: types.Message):
     if ( db.user_exists(message.from_user.id)):
@@ -71,6 +71,7 @@ async def cmd_menu(message: types.Message):
 
 
 # from aiogram.dispatcher.filters import Text
+@dp.callback_query_handler(text="menu")
 @dp.message_handler(Text(equals="👤 Личный кабинет"))
 async def with_puree(message: types.Message):
     keyboard_lk = types.InlineKeyboardMarkup()
@@ -81,7 +82,7 @@ async def with_puree(message: types.Message):
     lk_b5 = types.InlineKeyboardButton(text="История пополнений", callback_data="history_balance")
     lk_b6 = types.InlineKeyboardButton(text="Меню", callback_data="/menu")
 
-    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b5,lk_b6)
+    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b5,lk_b6) if db.get_full(message.from_user.id) == 0 else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b5,lk_b6)
     await message.answer(f'Имя {first_name}!\nСтатус: {status}\nБаланс: {balance}', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
 
 
@@ -89,13 +90,39 @@ async def with_puree(message: types.Message):
 @dp.callback_query_handler(text="log in")
 async def auto(call: types.CallbackQuery):
 
-    if Rules:
+    keyboard_reg = types.InlineKeyboardMarkup()
+    reg_b1 = types.InlineKeyboardButton(text="Указать ФИО", callback_data="get_name")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
+    reg_b2 = types.InlineKeyboardButton(text="Указать паспорт", callback_data="get_pasport")
+    reg_b3 = types.InlineKeyboardButton(text="Указать медсправку", callback_data="get_medical")
+    reg_b4 = types.InlineKeyboardButton(text="Указать эл. почту", callback_data="get_email")
+    reg_b5 = types.InlineKeyboardButton(text="Указать дату рождения", callback_data="get_age")
+    reg_b6 = types.InlineKeyboardButton(text="Меню", callback_data="menu")
+
+    keyboard_reg.add(reg_b1,reg_b2,reg_b3,reg_b4,reg_b5,reg_b6) 
+    await call.message.answer('Работает',reply_markup=keyboard_reg)
+   
+
+    # if Rules:
     
-        await call.answer(text="Вы уже авторизованы.", show_alert=True) #Всплывающее сообщение
+    #     await call.answer(text="Вы уже авторизованы.", show_alert=True) #Всплывающее сообщение
+
+@dp.callback_query_handler(text="get_name")
+async def get_name(call: types.CallbackQuery, state: FSMContext):
+    await call.message.answer('Введите ваше ФИО.')
+    await UserState.name.set()
 
     
-
-        
+@dp.message_handler(state=UserState.name,content_types=types.ContentTypes.TEXT)
+async def set_name(message: types.Message, state: FSMContext):
+    keyboard_reg = types.InlineKeyboardMarkup()
+    reg_b1 = types.InlineKeyboardButton(text="Да", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
+    reg_b2 = types.InlineKeyboardButton(text="Нет", callback_data="get_name")
+    keyboard_reg.add(reg_b1,reg_b2)
+    await state.finish()
+    await message.answer(f'Вы указали {message.text}.Верно?',reply_markup=keyboard_reg)
+    
+    # await message.answer(text='Напиши фамилию ')
+    # await reg.fname.set()        
 
     
 
