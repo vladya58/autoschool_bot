@@ -6,9 +6,14 @@ import logging
 from db import Database
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
+import time
 
 class UserState(StatesGroup):
     name = State()
+    pasport = State()
+    medical = State()
+    email = State()
+    age = State()
     
 
 
@@ -56,6 +61,8 @@ async def get_auto(message: types.Message, state: FSMContext):
 @dp.message_handler(commands=['menu']) #Явно указываем в декораторе, на какую команду реагируем. 
 async def cmd_menu(message: types.Message):
     if ( db.user_exists(message.from_user.id)):
+        await message.delete()
+    
         buttons_menu = types.ReplyKeyboardMarkup()
         button_1 = types.KeyboardButton(text="👤 Личный кабинет")
         button_2 = '🚘 Записаться на вождение'
@@ -65,15 +72,19 @@ async def cmd_menu(message: types.Message):
         button_6 = '✉️ Сообщение для админа.'
         button_7 = '❓ Информация.'
         buttons_menu.add(button_1,button_2,button_3, button_4, button_5, button_6, button_7)
-        await message.answer("Привет, {0.first_name}!".format(message.from_user), reply_markup=buttons_menu)
+        await message.answer("{0.first_name}, Вы находитесь в главном меню.".format(message.from_user), reply_markup=buttons_menu)
     else:
         await message.answer("Вы не авторизованы. Воспользуйтесь командой /start.", reply_markup=types.ReplyKeyboardRemove())
 
 
 # from aiogram.dispatcher.filters import Text
-@dp.callback_query_handler(text="menu")
 @dp.message_handler(Text(equals="👤 Личный кабинет"))
+@dp.callback_query_handler(text="lk")
 async def with_puree(message: types.Message):
+    # await bot.edit_message_text(" s", message.chat.id, message.message_id-1, reply_markup=types.ReplyKeyboardRemove())
+    # # await bot.delete_message(message.chat.id, message.message_id+1)
+    # # await bot.delete_message(message.chat.id, message.message_id)
+    # # await bot.delete_message(message.chat.id, message.message_id-1)
     keyboard_lk = types.InlineKeyboardMarkup()
     lk_b1 = types.InlineKeyboardButton(text="Заполнить данные", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
     lk_b2 = types.InlineKeyboardButton(text="Просмотреть данные", callback_data="view_data")
@@ -82,50 +93,116 @@ async def with_puree(message: types.Message):
     lk_b5 = types.InlineKeyboardButton(text="История пополнений", callback_data="history_balance")
     lk_b6 = types.InlineKeyboardButton(text="Меню", callback_data="/menu")
 
-    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b5,lk_b6) if db.get_full(message.from_user.id) == 0 else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b5,lk_b6)
-    await message.answer(f'Имя {first_name}!\nСтатус: {status}\nБаланс: {balance}', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
+    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b5,lk_b6) if db.get_full(message.from_user.id) == "Регистрация не завершена" else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b5,lk_b6)
+
+
+    await message.answer(f'👤Личный кабинет👤:\nНикнейм {first_name}!\nСтатус: {db.get_full(message.from_user.id)}\nБаланс: {balance}', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
 
 
 
 @dp.callback_query_handler(text="log in")
 async def auto(call: types.CallbackQuery):
-
+    
+    lst_data = db.get_data(call.from_user.id)
     keyboard_reg = types.InlineKeyboardMarkup()
-    reg_b1 = types.InlineKeyboardButton(text="Указать ФИО", callback_data="get_name")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
-    reg_b2 = types.InlineKeyboardButton(text="Указать паспорт", callback_data="get_pasport")
-    reg_b3 = types.InlineKeyboardButton(text="Указать медсправку", callback_data="get_medical")
-    reg_b4 = types.InlineKeyboardButton(text="Указать эл. почту", callback_data="get_email")
-    reg_b5 = types.InlineKeyboardButton(text="Указать дату рождения", callback_data="get_age")
-    reg_b6 = types.InlineKeyboardButton(text="Меню", callback_data="menu")
+    reg_b1 = types.InlineKeyboardButton(text="Указать ФИО", callback_data="set_name")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
+    reg_b2 = types.InlineKeyboardButton(text="Указать паспорт", callback_data="set_pasport")
+    reg_b3 = types.InlineKeyboardButton(text="Указать медсправку", callback_data="set_medical")
+    reg_b4 = types.InlineKeyboardButton(text="Указать эл. почту", callback_data="set_email")
+    reg_b5 = types.InlineKeyboardButton(text="Указать дату рождения", callback_data="set_age")
+    #reg_b6 = types.InlineKeyboardButton(text="Меню", callback_data="lk")
+    lst_key = [reg_b1,reg_b2,reg_b3,reg_b4,reg_b5]
 
-    keyboard_reg.add(reg_b1,reg_b2,reg_b3,reg_b4,reg_b5,reg_b6) 
-    await call.message.answer('Работает',reply_markup=keyboard_reg)
+    for i in range(len(lst_data)-1,-1,-1):
+        if lst_data[i] == None or lst_data[i] == "":
+            pass
+        else:
+            lst_key.pop(i)
+    if len(lst_key) !=0:
+        keyboard_reg.add(*lst_key) 
+        await call.message.answer('Какие данные вы хотите заполнить?',reply_markup=keyboard_reg)
+    else:
+        db.set_full(call.from_user.id, 'Регистрация завершена')
+        await call.message.answer('Вы заполнили все поля. Для перехода в главное меню воспользуйтесь командой /menu',reply_markup=keyboard_reg)
+
    
 
     # if Rules:
     
     #     await call.answer(text="Вы уже авторизованы.", show_alert=True) #Всплывающее сообщение
 
-@dp.callback_query_handler(text="get_name")
+
+
+
+
+
+
+@dp.callback_query_handler(text="set_name")
 async def get_name(call: types.CallbackQuery, state: FSMContext):
+    await call.message.delete()
     await call.message.answer('Введите ваше ФИО.')
     await UserState.name.set()
 
+@dp.callback_query_handler(text="set_pasport")
+async def get_name(call: types.CallbackQuery, state: FSMContext):
+    await call.message.delete()
+    await call.message.answer('Введите ваше серию и номер паспорта в формате: 1234 56789123.')
+    await UserState.pasport.set()
+
+
+@dp.callback_query_handler(text="set_medical")
+async def get_name(call: types.CallbackQuery, state: FSMContext):
+    await call.message.answer('Введите номер вашей медсправки в формате: 00 1234567.')
+    await UserState.medical.set()
+
+@dp.callback_query_handler(text="set_email")
+async def get_name(call: types.CallbackQuery, state: FSMContext):
+    await call.message.answer('Введите ваше электронный адрес.')
+    await UserState.email.set()
+
+@dp.callback_query_handler(text="set_age")
+async def get_name(call: types.CallbackQuery, state: FSMContext):
+    await call.message.answer('Введите вашу дату рождения в формате: 01.01.1900.')
+    await UserState.age.set()
+
     
 @dp.message_handler(state=UserState.name,content_types=types.ContentTypes.TEXT)
-async def set_name(message: types.Message, state: FSMContext):
+async def set_name(message: types.Message, state: FSMContext,call = "set_name"):
+    
     keyboard_reg = types.InlineKeyboardMarkup()
     reg_b1 = types.InlineKeyboardButton(text="Да", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
-    reg_b2 = types.InlineKeyboardButton(text="Нет", callback_data="get_name")
+    reg_b2 = types.InlineKeyboardButton(text="Нет", callback_data=call)
     keyboard_reg.add(reg_b1,reg_b2)
+    db.set_name(message.from_user.id, message.text)
+    await state.finish()
+    await message.answer(f'Вы указали {message.text}.Верно?',reply_markup=keyboard_reg) 
+
+@dp.message_handler(state=UserState.pasport,content_types=types.ContentTypes.TEXT)
+async def set_pasport(message: types.Message, state: FSMContext,call = "set_pasport"):
+    await message.delete()
+    keyboard_reg = types.InlineKeyboardMarkup()
+    reg_b1 = types.InlineKeyboardButton(text="Да", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
+    reg_b2 = types.InlineKeyboardButton(text="Нет", callback_data=call)
+    keyboard_reg.add(reg_b1,reg_b2)
+    db.set_pasport(message.from_user.id, message.text)
     await state.finish()
     await message.answer(f'Вы указали {message.text}.Верно?',reply_markup=keyboard_reg)
     
-    # await message.answer(text='Напиши фамилию ')
-    # await reg.fname.set()        
+          
 
     
 
+@dp.callback_query_handler(text="view_data")
+async def auto(call: types.CallbackQuery):
+    
+    lst_full_data = db.get_full_data(call.from_user.id)
+    keyboard_reg = types.InlineKeyboardMarkup()
+    reg_b1 = types.InlineKeyboardButton(text="Назад", callback_data="set_name")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
+   
+   
+    keyboard_reg.add(reg_b1) 
+    await call.message.answer(f'Ваши данные:\nЛогин {lst_full_data[0]}\nТелефон {lst_full_data[1]}\nИмя {lst_full_data[2]}\nПаспортные данные {lst_full_data[3]}\nМедицинская справка {lst_full_data[4]}\nЭлектронный адрес {lst_full_data[5]}\nДата рождения {lst_full_data[6]}\nГруппа {lst_full_data[7]}\n',reply_markup=keyboard_reg)
+    
 
 
     
