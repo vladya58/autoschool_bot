@@ -1,8 +1,15 @@
+# Cмена клавиатуры 
+# @dispatcher.callback_query_handler(lambda call: "<CALLBACK>" in call.data)
+# async def next_keyboard(call):
+
+#     await call.message.edit_reply_markup(<YOUR KEYBOARD>)
+
 #6132924794:AAEGdkuvbN_lOCnlThLVFHCPwvNKafdgmic
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.filters import Text
 import logging
+from typing import Union
 from db import Database
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -14,8 +21,16 @@ class UserState(StatesGroup):
     medical = State()
     email = State()
     age = State()
-    
 
+
+    
+class lkState(StatesGroup):
+    lk = State()
+    reg_data = State()
+    edit_data = State()
+    view_data = State()
+    exam = State()
+    history_balance = State()
 
 
 db = Database('C:\pybot\db.db')
@@ -60,8 +75,10 @@ async def get_auto(message: types.Message, state: FSMContext):
 @dp.message_handler(Text(equals="Отклонить"))
 @dp.message_handler(commands=['menu']) #Явно указываем в декораторе, на какую команду реагируем. 
 async def cmd_menu(message: types.Message):
+    await bot.delete_message(message.chat.id, message.message_id-1)
+    await bot.delete_message(message.chat.id, message.message_id)
     if ( db.user_exists(message.from_user.id)):
-        await message.delete()
+        
     
         buttons_menu = types.ReplyKeyboardMarkup()
         button_1 = types.KeyboardButton(text="👤 Личный кабинет")
@@ -76,15 +93,9 @@ async def cmd_menu(message: types.Message):
     else:
         await message.answer("Вы не авторизованы. Воспользуйтесь командой /start.", reply_markup=types.ReplyKeyboardRemove())
 
-
-# from aiogram.dispatcher.filters import Text
-@dp.message_handler(Text(equals="👤 Личный кабинет"))
-@dp.callback_query_handler(text="lk")
-async def with_puree(message: types.Message):
-    # await bot.edit_message_text(" s", message.chat.id, message.message_id-1, reply_markup=types.ReplyKeyboardRemove())
-    # # await bot.delete_message(message.chat.id, message.message_id+1)
-    # # await bot.delete_message(message.chat.id, message.message_id)
-    # # await bot.delete_message(message.chat.id, message.message_id-1)
+@dp.callback_query_handler(lambda callback: callback.data in ["back_to_lk"])
+async def with_puree(callback: Union[types.CallbackQuery,types.Message],state: FSMContext):
+    await callback.message.delete()
     keyboard_lk = types.InlineKeyboardMarkup()
     lk_b1 = types.InlineKeyboardButton(text="Заполнить данные", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
     lk_b2 = types.InlineKeyboardButton(text="Просмотреть данные", callback_data="view_data")
@@ -93,6 +104,26 @@ async def with_puree(message: types.Message):
     lk_b5 = types.InlineKeyboardButton(text="История пополнений", callback_data="history_balance")
     lk_b6 = types.InlineKeyboardButton(text="Меню", callback_data="/menu")
 
+    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b5,lk_b6) if db.get_full(callback.from_user.id) == "Регистрация не завершена" else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b5,lk_b6)
+
+    
+    await callback.message.answer(f'👤Личный кабинет👤:\nНикнейм {first_name}!\nСтатус: {db.get_full(callback.from_user.id)}\nБаланс: {balance}', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
+
+# from aiogram.dispatcher.filters import Text
+@dp.message_handler(Text(equals="👤 Личный кабинет"))
+async def with_puree(message: Union[types.Message,types.CallbackQuery], state: FSMContext):
+    await bot.delete_message(message.chat.id, message.message_id-1)
+    await bot.delete_message(message.chat.id, message.message_id)
+    
+    keyboard_lk = types.InlineKeyboardMarkup()
+    lk_b1 = types.InlineKeyboardButton(text="Заполнить данные", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
+    lk_b2 = types.InlineKeyboardButton(text="Просмотреть данные", callback_data="view_data")
+    lk_b3 = types.InlineKeyboardButton(text="Изменить данные", callback_data="edit_data")
+    lk_b4 = types.InlineKeyboardButton(text="Просмотр маршрута", callback_data="ex_mars")
+    lk_b5 = types.InlineKeyboardButton(text="История пополнений", callback_data="history_balance")
+    lk_b6 = types.InlineKeyboardButton(text="Меню", callback_data="/menu")
+    
+
     keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b5,lk_b6) if db.get_full(message.from_user.id) == "Регистрация не завершена" else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b5,lk_b6)
 
 
@@ -100,33 +131,42 @@ async def with_puree(message: types.Message):
 
 
 
-@dp.callback_query_handler(text="log in")
-async def auto(call: types.CallbackQuery):
-    
-    lst_data = db.get_data(call.from_user.id)
-    keyboard_reg = types.InlineKeyboardMarkup()
-    reg_b1 = types.InlineKeyboardButton(text="Указать ФИО", callback_data="set_name")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
-    reg_b2 = types.InlineKeyboardButton(text="Указать паспорт", callback_data="set_pasport")
-    reg_b3 = types.InlineKeyboardButton(text="Указать медсправку", callback_data="set_medical")
-    reg_b4 = types.InlineKeyboardButton(text="Указать эл. почту", callback_data="set_email")
-    reg_b5 = types.InlineKeyboardButton(text="Указать дату рождения", callback_data="set_age")
-    #reg_b6 = types.InlineKeyboardButton(text="Меню", callback_data="lk")
-    lst_key = [reg_b1,reg_b2,reg_b3,reg_b4,reg_b5]
-
-    for i in range(len(lst_data)-1,-1,-1):
-        if lst_data[i] == None or lst_data[i] == "":
-            pass
+@dp.callback_query_handler(lambda callback: callback.data in ["log in", "view_data"])
+async def auto(callback: types.CallbackQuery):
+    if callback.data == "log in":
+        await callback.message.delete()
+        lst_data = db.get_data(callback.from_user.id)
+        keyboard_reg = types.InlineKeyboardMarkup()
+        reg_b1 = types.InlineKeyboardButton(text="Указать ФИО", callback_data="set_name")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
+        reg_b2 = types.InlineKeyboardButton(text="Указать паспорт", callback_data="set_pasport")
+        reg_b3 = types.InlineKeyboardButton(text="Указать медсправку", callback_data="set_medical")
+        reg_b4 = types.InlineKeyboardButton(text="Указать эл. почту", callback_data="set_email")
+        reg_b5 = types.InlineKeyboardButton(text="Указать дату рождения", callback_data="set_age")
+        reg_b6 = types.InlineKeyboardButton(text="Назад", callback_data="back_to_lk")
+        lst_key = [reg_b1,reg_b2,reg_b3,reg_b4,reg_b5]
+        for i in range(len(lst_data)-1,-1,-1):
+            if lst_data[i] == None or lst_data[i] == "":
+                pass
+            else:
+                lst_key.pop(i)
+        if len(lst_key) !=0:
+            keyboard_reg.add(*lst_key,reg_b6) 
+            await callback.message.answer('Какие данные вы хотите заполнить?',reply_markup=keyboard_reg)
         else:
-            lst_key.pop(i)
-    if len(lst_key) !=0:
-        keyboard_reg.add(*lst_key) 
-        await call.message.answer('Какие данные вы хотите заполнить?',reply_markup=keyboard_reg)
-    else:
-        db.set_full(call.from_user.id, 'Регистрация завершена')
-        await call.message.answer('Вы заполнили все поля. Для перехода в главное меню воспользуйтесь командой /menu',reply_markup=keyboard_reg)
+            db.set_full(callback.from_user.id, 'Регистрация завершена')
+            await callback.message.answer('Вы заполнили все поля. Для перехода в главное меню воспользуйтесь командой /menu',reply_markup=keyboard_reg)
 
    
-
+    if callback.data == "view_data":
+        await callback.message.delete()
+        lst_full_data = db.get_full_data(callback.from_user.id)
+        keyboard_reg = types.InlineKeyboardMarkup()
+        reg_b1 = types.InlineKeyboardButton(text="Назад", callback_data="back_to_lk")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
+    
+    
+        keyboard_reg.add(reg_b1) 
+        await callback.message.answer(f'Ваши данные:\nЛогин {lst_full_data[0]}\nТелефон +{lst_full_data[1]}\nИмя {lst_full_data[2]}\nПаспортные данные {lst_full_data[3]}\nМедицинская справка {lst_full_data[4]}\nЭлектронный адрес {lst_full_data[5]}\nДата рождения {lst_full_data[6]}\nГруппа {lst_full_data[7]}\n',reply_markup=keyboard_reg)
+        
     # if Rules:
     
     #     await call.answer(text="Вы уже авторизованы.", show_alert=True) #Всплывающее сообщение
@@ -139,6 +179,7 @@ async def auto(call: types.CallbackQuery):
 
 @dp.callback_query_handler(text="set_name")
 async def get_name(call: types.CallbackQuery, state: FSMContext):
+    
     await call.message.delete()
     await call.message.answer('Введите ваше ФИО.')
     await UserState.name.set()
@@ -168,7 +209,8 @@ async def get_name(call: types.CallbackQuery, state: FSMContext):
     
 @dp.message_handler(state=UserState.name,content_types=types.ContentTypes.TEXT)
 async def set_name(message: types.Message, state: FSMContext,call = "set_name"):
-    
+    await bot.delete_message(message.chat.id, message.message_id-1)
+    await bot.delete_message(message.chat.id, message.message_id)
     keyboard_reg = types.InlineKeyboardMarkup()
     reg_b1 = types.InlineKeyboardButton(text="Да", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
     reg_b2 = types.InlineKeyboardButton(text="Нет", callback_data=call)
@@ -179,7 +221,8 @@ async def set_name(message: types.Message, state: FSMContext,call = "set_name"):
 
 @dp.message_handler(state=UserState.pasport,content_types=types.ContentTypes.TEXT)
 async def set_pasport(message: types.Message, state: FSMContext,call = "set_pasport"):
-    await message.delete()
+    await bot.delete_message(message.chat.id, message.message_id-1)
+    await bot.delete_message(message.chat.id, message.message_id)
     keyboard_reg = types.InlineKeyboardMarkup()
     reg_b1 = types.InlineKeyboardButton(text="Да", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
     reg_b2 = types.InlineKeyboardButton(text="Нет", callback_data=call)
@@ -192,23 +235,21 @@ async def set_pasport(message: types.Message, state: FSMContext,call = "set_pasp
 
     
 
-@dp.callback_query_handler(text="view_data")
-async def auto(call: types.CallbackQuery):
-    
-    lst_full_data = db.get_full_data(call.from_user.id)
-    keyboard_reg = types.InlineKeyboardMarkup()
-    reg_b1 = types.InlineKeyboardButton(text="Назад", callback_data="set_name")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
-   
-   
-    keyboard_reg.add(reg_b1) 
-    await call.message.answer(f'Ваши данные:\nЛогин {lst_full_data[0]}\nТелефон {lst_full_data[1]}\nИмя {lst_full_data[2]}\nПаспортные данные {lst_full_data[3]}\nМедицинская справка {lst_full_data[4]}\nЭлектронный адрес {lst_full_data[5]}\nДата рождения {lst_full_data[6]}\nГруппа {lst_full_data[7]}\n',reply_markup=keyboard_reg)
+
     
 
 
+
     
-@dp.message_handler() 
+
+
+@dp.message_handler(state=lkState.lk,content_types=types.ContentTypes.TEXT)
 async def bot_message(message: types.Message):
     await message.reply("Не понял", reply_markup=types.ReplyKeyboardRemove())
+
+    
+# @dp.message_handler() 
+
     
 
 
