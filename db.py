@@ -3,28 +3,6 @@ import sqlite3
 
 import psycopg2
 
-# # установка параметров подключения к базе данных
-# conn = psycopg2.connect(
-    
-#     host="localhost",
-#     port = "5432",
-#     database="Autoshool58",
-#     user="postgres",
-#     password="Qwerty58"
-# )
-
-# # выполнение запроса на выборку данных
-# cur = conn.cursor()
-# cur.execute("SELECT * FROM Students")
-
-# # получение результатов и вывод их на экран
-# rows = cur.fetchall()
-# for row in rows:
-#     print(row)
-
-# # закрытие соединения с базой данных
-# cur.close()
-# conn.close()
 
 class Database:
     def __init__(self,db):
@@ -113,7 +91,45 @@ class Database:
         with self.connection:
            return self.cursor.execute("UPDATE students SET full_reg = %s WHERE user_id = %s",(True, user_id))
         
+    def check_table(self, user_id, month, day,year = "2023"):
     
+        data_str = f"{year}-{month.rjust(2, '0')}-{day.rjust(2, '0')}"
+        with self.connection:
+            self.cursor.execute("SELECT tp.time FROM students s JOIN groups g ON s.id_group = g.id_group JOIN timetable_practic tp ON g.id_teacher = tp.id_teacher WHERE s.user_id = %s AND tp.date = %s", (user_id,data_str, ))
+    
+            result = self.cursor.fetchall()
+            return result
+    
+    def rec_lesson(self,user_id, date, time):
+        with self.connection:
+
+            self.cursor.execute("INSERT INTO timetable_practic (date, time, id_teacher, id_lesson, id_student) SELECT %s, %s, groups.id_teacher, %s, students.id_student FROM students JOIN groups ON students.id_group = groups.id_group WHERE students.user_id = %s", (date,time, 1, user_id, ))
+    
+    def rec_lesson(self,user_id, date): #ДОПИСАТЬ!
+        with self.connection:
+
+            self.cursor.execute("INSERT INTO timetable_practic (date, time, id_teacher, id_lesson, id_student) SELECT %s, %s, groups.id_teacher, %s, students.id_student FROM students JOIN groups ON students.id_group = groups.id_group WHERE students.user_id = %s", (date,time, 1, user_id, ))
+            
+
+    def show_date_exam(self,id_lesson,date):
+        with self.connection:
+            self.cursor.execute("SELECT id_exam, date_exam ,count_students FROM gibdd_exam WHERE id_lesson = %s AND date_exam > %s ", (id_lesson,date,))
+            result = self.cursor.fetchall()
+            return result
+        
+    def show_count_slots(self,id_exam):
+         with self.connection:
+            self.cursor.execute("SELECT id_student  FROM students_of_exam WHERE id_exam = %s", (id_exam,))
+            
+            result = self.cursor.fetchall()
+            return result
+
+
+
+
+
+            
+            
 
 
     
