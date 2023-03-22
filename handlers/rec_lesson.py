@@ -53,7 +53,7 @@ async def rec(callback: types.CallbackQuery, state: FSMContext):
         p_exam = True
         await callback.message.delete()
         await bot.answer_callback_query(callback.id)
-        await show_calendar(lesson, t_exam, p_exam, callback.message.chat.id)
+        await exams(lesson, t_exam, p_exam, callback.message.chat.id)
         
     elif callback.data == "back_to_rec":
         await rec_menu(callback.message)
@@ -67,7 +67,7 @@ async def exams(lesson, t_exam, p_exam,chat_id: int):
         for i in range(len(date_array)):
             count_st = db.show_count_slots(date_array[i][0])
             date_str = date_array[i][1].strftime("%Y-%m-%d")
-            callback_data = f"rec- t_exam -2023-{date_str}"
+            callback_data = f"rec- t_exam -{date_str}"
             button_text = f"{date_str}, Осталось {date_array[i][2]-len(count_st)} из {date_array[i][2]} мест"
             markup.insert(types.InlineKeyboardButton(button_text, callback_data=callback_data))
 
@@ -77,14 +77,14 @@ async def exams(lesson, t_exam, p_exam,chat_id: int):
         date_array = db.show_date_exam(4, datetime.date.today())                   
         markup = types.InlineKeyboardMarkup(row_width=1)
         for i in range(len(date_array)):
-            
+            count_st = db.show_count_slots(date_array[i][0])
             date_str = date_array[i][1].strftime("%Y-%m-%d")
-            callback_data = f"rec- p_exam -2023-{date_str}"
-            button_text = f"{date_str}, {date_array[i][2]} человек"
+            callback_data = f"rec- p_exam -{date_str}"
+            button_text = f"{date_str}, Осталось {date_array[i][2]-len(count_st)} из {date_array[i][2]} мест"
             markup.insert(types.InlineKeyboardButton(button_text, callback_data=callback_data))
 
         markup.insert(types.InlineKeyboardButton("Назад", callback_data="back_to_rec"))
-        await bot.send_message(chat_id, "Выберите день практического экзамена", reply_markup=markup)
+        await bot.send_message(chat_id, "Выберите день практического экзамена. Нажимая на выбранный день, вы подтверждаете свою запись на этот день. Отменить эту запись можно будет в главном меню.", reply_markup=markup)
     
 
 async def show_calendar(lesson, t_exam, p_exam,chat_id: int):
@@ -262,9 +262,8 @@ async def process_calendar_day(callback_query: types.CallbackQuery):
    
         await show_time_picker(callback_query.from_user.id,callback_query.message.message_id,callback_query.message.chat.id, selected_day,selected_month)
     if "t_exam" in callback_query.data:
-        selected_month,selected_day = callback_query.data.split('-')[2:]
-   
-        await show_exam_slots("t_exam",callback_query.message.message_id,callback_query.message.chat.id, selected_day,selected_month)
+        pass
+        
 
     if "p_exam" in callback_query.data:
         pass
@@ -275,11 +274,18 @@ async def recover(callback_query: types.CallbackQuery):
     if "lesson" in callback_query.data:
         selected_year_str,selected_month_str,selected_day_str, selected_time_str = callback_query.data.split('-')[2:]
         db.rec_lesson(callback_query.from_user.id, f"{selected_year_str}-{selected_month_str}-{selected_day_str}",f"{selected_time_str}")
+        await rec_menu(callback_query.message)    
     if "t_exam" in callback_query.data:
-        pass
+        selected_year_str,selected_month_str,selected_day_str = callback_query.data.split('-')[2:]
+        db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 3)
+        await callback_query.answer(text="Запись на занятие прошла успешно!")
+        await rec_menu(callback_query.message)
 
     if "p_exam" in callback_query.data:
-        pass
+        selected_year_str,selected_month_str,selected_day_str = callback_query.data.split('-')[2:]
+        db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 4)
+        await callback_query.answer(text="Запись на занятие прошла успешно!")
+        await rec_menu(callback_query.message)
 
 
 
