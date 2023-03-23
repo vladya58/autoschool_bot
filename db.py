@@ -83,7 +83,6 @@ class Database:
     def get_data(self,user_id):
         with self.connection:
             self.cursor.execute("SELECT name,pasport,medical,email,age FROM students WHERE user_id = %s", (user_id,))
-            # result = self.cursor.execute (f"SELECT name,pasport,medical,email,age FROM students WHERE user_id = '{user_id}'").fetchall()
             result = self.cursor.fetchall()
             return result[0]
         
@@ -105,10 +104,12 @@ class Database:
 
             self.cursor.execute("INSERT INTO timetable_practic (date, time, id_teacher, id_lesson, id_student) SELECT %s, %s, groups.id_teacher, %s, students.id_student FROM students JOIN groups ON students.id_group = groups.id_group WHERE students.user_id = %s", (date,time, 1, user_id, ))
     
-    def rec_exam(self,user_id,date, id_lesson): #ДОПИСАТЬ!
+    def rec_exam(self,user_id,date, id_lesson): 
         with self.connection:
             self.cursor.execute("INSERT INTO students_of_exam (id_exam, id_student) SELECT (SELECT id_exam FROM gibdd_exam WHERE date_exam = %s AND id_lesson = %s), id_student FROM students WHERE user_id = %s", (date, id_lesson,user_id,))
             
+
+
 
 
     def show_date_exam(self,id_lesson,date):

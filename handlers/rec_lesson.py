@@ -20,8 +20,8 @@ async def rec_menu(message: types.Message):
     
     keyboard_rec = types.InlineKeyboardMarkup()
     b1 = types.InlineKeyboardButton(text="Занятие", callback_data="lesson")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
-    b2 = types.InlineKeyboardButton(text="Теор. экзамен", callback_data="t_exam")
-    b3 = types.InlineKeyboardButton(text="Пр. экзамен", callback_data="p_exam")
+    b2 = types.InlineKeyboardButton(text="Теоретический экзамен", callback_data="t_exam")
+    b3 = types.InlineKeyboardButton(text="Практический экзамен", callback_data="p_exam")
     b4 = types.InlineKeyboardButton(text="Меню", callback_data="menu")
     
 
@@ -117,13 +117,9 @@ def create_calendar(lesson, t_exam, p_exam, year=None, month=None):
             if day == 0:
                 row.append(types.InlineKeyboardButton(" ", callback_data="ignore"))
             else:
-                if lesson:
-                    row.append(types.InlineKeyboardButton(str(day), callback_data=f"calendar-day lesson -{month}-{day}"))
-                if t_exam:
-                    row.append(types.InlineKeyboardButton(str(day), callback_data=f"calendar-day t_exam -{month}-{day}"))
-                if p_exam:
-                    row.append(types.InlineKeyboardButton(str(day), callback_data=f"calendar-day p_exam -{month}-{day}"))
-        
+                
+                row.append(types.InlineKeyboardButton(str(day), callback_data=f"calendar-day lesson -{month}-{day}"))
+                
         
         markup.row(*row)
     return markup
@@ -165,14 +161,19 @@ async def show_time_picker(user_id: int, message_id: int, chat_id: int, selected
         if hour != 12:
             time_str = f"{hour:02}:00"
             callback_data = f"lesson-time-2023-{selected_month}-{selected_day}-{time_str}"
-            button_text = time_str if datetime.datetime.strptime(callback_data, "lesson-time-%Y-%m-%d-%H:%M") > datetime.datetime.combine(now.date(), now.time()) else f"{time_str} (уже прошло)"
-            button_text = f"{time_str} (занято)" if time_str in time_array else time_str
-            button_text = f"{time_str} (выходной)" if datetime.datetime.strptime(callback_data, "lesson-time-%Y-%m-%d-%H:%M").weekday() in [5,6] else button_text
+            if time_str not in time_array and datetime.datetime.strptime(callback_data, "lesson-time-%Y-%m-%d-%H:%M") > datetime.datetime.combine(now.date(), now.time()) and datetime.datetime.strptime(callback_data, "lesson-time-%Y-%m-%d-%H:%M").weekday() in [1,2,3,4]:
+                button_text = time_str
+                markup.insert(types.InlineKeyboardButton(button_text, callback_data=callback_data))
+            else:
+                button_text = time_str
+                button_text = f"{time_str} (занято)" if time_str in time_array else button_text
+                button_text = f"{time_str} (уже прошло)" if datetime.datetime.strptime(callback_data, "lesson-time-%Y-%m-%d-%H:%M") < datetime.datetime.combine(now.date(), now.time()) else button_text
+                button_text = f"{time_str} (выходной)" if datetime.datetime.strptime(callback_data, "lesson-time-%Y-%m-%d-%H:%M").weekday() in [5,6] else button_text
             
-            callback_data = callback_data + " занято" if "(занято)" in button_text else callback_data
-            callback_data = callback_data + " выходной" if "(выходной)" in button_text else callback_data
-            callback_data = callback_data + " прошло" if "прошло" in button_text else callback_data  
-            markup.insert(types.InlineKeyboardButton(button_text, callback_data=callback_data))
+                callback_data = callback_data + " занято" if "(занято)" in button_text else callback_data
+                callback_data = callback_data + " выходной" if "(выходной)" in button_text else callback_data
+                callback_data = callback_data + " прошло" if "прошло" in button_text else callback_data  
+                markup.insert(types.InlineKeyboardButton(button_text, callback_data=callback_data))
         else:
             pass
     markup.insert(types.InlineKeyboardButton("Назад", callback_data="back_to_rec"))
@@ -224,72 +225,41 @@ async def process_lesson_callback(callback_data: types.CallbackQuery):
     
 
 
-
-
-async def show_exam_slots(exam_name, message_id: int, chat_id: int, selected_day: int,selected_month:int):
-    await bot.delete_message(chat_id,message_id)
-    # Показываем пользователю выбор времени
-    slots = 10
-    data_str = f"2023-{selected_month}-{selected_day}"
-    if datetime.datetime.strptime(data_str, "%Y-%m-%d") > datetime.datetime.now() and datetime.datetime.strptime(data_str, "%Y-%m-%d").weekday() in [1,2,3,4]:
-    
-        if exam_name == "t_exam":
-            if slots < 15:
-                
-                markup = types.InlineKeyboardMarkup(row_width=2)
-                b1 = types.InlineKeyboardButton(text="Записаться", callback_data="rec_t_exam")
-                b2 = types.InlineKeyboardButton(text="Назад", callback_data="back_to_rec")
-                markup.add(b1,b2) 
-                
-                await bot.send_message(chat_id, f"На дату {selected_month}.{selected_day} места остались. Нажмите записаться или кнопку назад для выхода", reply_markup=markup)
-
-            else: 
-                markup = types.InlineKeyboardMarkup(row_width=2)
-                b2 = types.InlineKeyboardButton(text="Назад", callback_data="back_to_rec")
-                markup.add(b2) 
-                await bot.send_message(chat_id, "На выбранную дату - мест нет. Попробуйте выбрать другой день", reply_markup=markup)
-        elif exam_name == "p_exam":
-            pass
-    else: 
-        markup = types.InlineKeyboardMarkup(row_width=2)
-        b2 = types.InlineKeyboardButton(text="Назад", callback_data="back_to_rec")
-        markup.add(b2) 
-        await bot.send_message(chat_id, "Вы выбрали дату которая прошла либо выходной день. Вернитесь назад чтобы записаться еще раз.", reply_markup=markup)
-
 async def process_calendar_day(callback_query: types.CallbackQuery):
-    if "lesson" in callback_query.data:
-        selected_month,selected_day = callback_query.data.split('-')[2:]
-   
-        await show_time_picker(callback_query.from_user.id,callback_query.message.message_id,callback_query.message.chat.id, selected_day,selected_month)
-    if "t_exam" in callback_query.data:
-        pass
-        
-
-    if "p_exam" in callback_query.data:
-        pass
-
+    selected_month,selected_day = callback_query.data.split('-')[2:]
+    await show_time_picker(callback_query.from_user.id,callback_query.message.message_id,callback_query.message.chat.id, selected_day,selected_month)
+    
     
 
 async def recover(callback_query: types.CallbackQuery):
     if "lesson" in callback_query.data:
         selected_year_str,selected_month_str,selected_day_str, selected_time_str = callback_query.data.split('-')[2:]
         db.rec_lesson(callback_query.from_user.id, f"{selected_year_str}-{selected_month_str}-{selected_day_str}",f"{selected_time_str}")
+        await callback_query.answer(text="Запись на занятие прошла успешно!")
         await rec_menu(callback_query.message)    
     if "t_exam" in callback_query.data:
         selected_year_str,selected_month_str,selected_day_str = callback_query.data.split('-')[2:]
-        db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 3)
-        await callback_query.answer(text="Запись на занятие прошла успешно!")
-        await rec_menu(callback_query.message)
+        try:
+            db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 3)
+            await callback_query.answer(text="Запись на теоретический экзамен прошла успешно!")
+            await rec_menu(callback_query.message)       
+        except:
+            await callback_query.answer(text="Записаться не удалось. Возможно вы не прошли все занятия или уже были записаны на эту дату. Вы будете возращены в меню записи.",show_alert=True)
+            await rec_menu(callback_query.message)
 
     if "p_exam" in callback_query.data:
         selected_year_str,selected_month_str,selected_day_str = callback_query.data.split('-')[2:]
-        db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 4)
-        await callback_query.answer(text="Запись на занятие прошла успешно!")
-        await rec_menu(callback_query.message)
+        try:
 
-
-
-
+            db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 4)
+            await callback_query.answer(text="Запись на практический экзамен прошла успешно!")
+            await rec_menu(callback_query.message)
+        
+        except:
+            await callback_query.answer(text="Записаться не удалось. Возможно вы не прошли все занятия или уже были записаны на эту дату. Вы будете возращены в меню записи.",show_alert=True)
+            await rec_menu(callback_query.message)
+        
+        
 
 def register_handlers(dp: Dispatcher):
     dp.register_message_handler(rec_menu, lambda message: message.text == "🚘 Записаться на вождение" )
