@@ -124,8 +124,11 @@ class Database:
             
             result = self.cursor.fetchall()
             return result
-
-
+    
+    def set_payment(self,user_id, date,amount,charge_id,currency,source):
+        with self.connection:
+            self.cursor.execute("INSERT INTO payment (id_student, date, amount, provider_payment_charge_id, currency, source) SELECT s.id_students, %s, %s, %s, %s, %s FROM students s WHERE s.user_id = %s;", (date,amount,charge_id,currency,source,user_id))
+            
    
             
             

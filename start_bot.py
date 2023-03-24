@@ -1,5 +1,5 @@
 from aiogram import executor
-from handlers import menu, lk,rec_lesson, exam_pdd, other
+from handlers import menu, lk,rec_lesson, exam_pdd, other,payment
 from create_bot import dp
 
 # import exam_pdd
@@ -8,7 +8,9 @@ from create_bot import dp
 menu.register_handlers(dp)
 lk.register_handlers(dp)
 rec_lesson.register_handlers(dp)
+payment.register_handlers(dp)
 other.register_handlers(dp)
+
 
 
 if __name__ == '__main__':
