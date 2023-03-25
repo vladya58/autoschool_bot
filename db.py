@@ -41,7 +41,14 @@ class Database:
             #result = self.cursor.execute (f"SELECT user_id,phone_number,name,pasport,medical,email,age,id_group FROM students WHERE user_id = '{user_id}'").fetchall()
             return result[0]
 
-    
+    def get_balance(self,user_id):
+        with self.connection:
+            self.cursor.execute("SELECT balance FROM students WHERE user_id = %s", (user_id,))
+            result = self.cursor.fetchone()
+            
+            return result[0]
+
+
     def set_user_id(self,user_id, phone):
         with self.connection:
            
@@ -124,12 +131,25 @@ class Database:
             
             result = self.cursor.fetchall()
             return result
-    
-    def set_payment(self,user_id, date,amount,charge_id,currency,source):
+         
+
+    def get_payment(self,user_id):
         with self.connection:
-            self.cursor.execute("INSERT INTO payment (id_student, date, amount, provider_payment_charge_id, currency, source) SELECT s.id_students, %s, %s, %s, %s, %s FROM students s WHERE s.user_id = %s;", (date,amount,charge_id,currency,source,user_id))
+            self.cursor.execute("SELECT p.date, p.time, p.amount, p.source FROM payment p JOIN students s ON s.id_student = p.id_student WHERE s.user_id = %s", (user_id,))
+            result = self.cursor.fetchall()
+            return result
+
+
+
+    def set_payment(self,user_id, date,time,amount,currency,charge_id,source):
+        with self.connection:
+            self.cursor.execute("INSERT INTO payment (id_student, date, time, amount, currency, provider_payment_charge_id, source) SELECT s.id_student, %s, %s, %s, %s, %s, %s FROM students s WHERE s.user_id = %s;", (date,time,amount,currency,charge_id,source,user_id))
             
-   
+    def update_balance(self,user_id,amount):
+        with self.connection:
+            self.cursor.execute("UPDATE students SET balance = balance + %s WHERE id_student = (SELECT id_student FROM students WHERE user_id = %s);", (amount, user_id))
+            
+        
             
             
 
