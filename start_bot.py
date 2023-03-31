@@ -2,8 +2,6 @@ from aiogram import executor
 from handlers import menu, lk,rec_lesson, exam_pdd, other,payment
 from create_bot import dp
 
-# import exam_pdd
-# import other
 
 menu.register_handlers(dp)
 lk.register_handlers(dp)

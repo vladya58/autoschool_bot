@@ -30,10 +30,9 @@ async def with_puree(callback: types.CallbackQuery,state: FSMContext):
     lk_b2 = types.InlineKeyboardButton(text="Просмотреть данные", callback_data="view_data")
     lk_b3 = types.InlineKeyboardButton(text="Изменить данные", callback_data="edit_data")
     lk_b4 = types.InlineKeyboardButton(text="Просмотр маршрута", callback_data="view_marshrut")
-    lk_b5 = types.InlineKeyboardButton(text="История пополнений", callback_data="history_balance")
     lk_b6 = types.InlineKeyboardButton(text="Меню", callback_data="menu", switch_inline_query="/menu")
 
-    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b5,lk_b6) if db.get_full(callback.from_user.id) == False else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b5,lk_b6)
+    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b6) if db.get_full(callback.from_user.id) == False else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b6)
 
     
     await callback.message.answer(f'👤Личный кабинет👤:\nНикнейм {first_name}!\nСтатус: {db.get_full(callback.from_user.id)}\nБаланс: {balance}', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
@@ -53,7 +52,7 @@ async def lk(message: Union[types.Message,types.CallbackQuery], state: FSMContex
     lk_b6 = types.InlineKeyboardButton(text="Меню", callback_data="menu")
     
 
-    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b5,lk_b6) if db.get_full(message.from_user.id) == False else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b5,lk_b6)
+    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b6) if db.get_full(message.from_user.id) == False else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b6)
 
 
     await message.answer(f'👤Личный кабинет👤:\nНикнейм {first_name}!\nСтатус: {db.get_full(message.from_user.id)}\nБаланс: {balance}', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
@@ -127,15 +126,6 @@ async def auto(callback: types.CallbackQuery, state: FSMContext):
 
         with open('1.jpg', 'rb') as photo:
             await callback.message.answer_photo(InputFile(photo),reply_markup= keyboard_reg)
-
-    if callback.data == "history_balance":
-        await state.update_data(previous_state="lk")
-        await callback.message.delete()
-
-        keyboard_reg = types.InlineKeyboardMarkup()
-        b1 = types.InlineKeyboardButton(text="Назад", callback_data="back_to_lk")
-        keyboard_reg.add(b1) 
-        await callback.message.answer('У Вас не было пополнений баланса',reply_markup=keyboard_reg)
 
     if callback.data == "menu":
         await bot.send_message(callback.from_user.id, '/menu')
@@ -288,8 +278,4 @@ def register_handlers(dp: Dispatcher):
 
     dp.register_message_handler(set_personal_data, state=[UserState.name, UserState.passport, UserState.medical,UserState.email,UserState.age], content_types=types.ContentTypes.TEXT)
     dp.register_message_handler(edit_personal_data, state=[UserState.name_edit, UserState.passport_edit, UserState.medical_edit,UserState.email_edit,UserState.age_edit], content_types=types.ContentTypes.TEXT)
-    # dp.register_message_handler(set_pasport_prov, state=UserState.pasport,content_types=types.ContentTypes.TEXT )
-
-
-
-    #dp.register_message_handler(get_auto, content_types=types.ContentType.CONTACT )
+    

@@ -17,7 +17,7 @@ async def cmd_menu(message: types.Message):
         button_1 = types.KeyboardButton(text="👤 Личный кабинет")
         button_2 = '🚘 Записаться на вождение'
         button_3 = '📅 Просмотреть график занятий'
-        button_4 = '💵 Пополнить баланс'
+        button_4 = '💵 Управление балансом'
         button_5 = '✅ Пройти экзамен ПДД'
         button_6 = '✉️ Сообщение для админа.'
         button_7 = '❓ Информация.'

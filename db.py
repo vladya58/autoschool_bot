@@ -36,7 +36,7 @@ class Database:
 
     def get_full_data(self,user_id):
         with self.connection:
-            self.cursor.execute("SELECT user_id,phone_number,name,pasport,medical,email,age,id_group FROM students WHERE user_id = %s", (user_id,))
+            self.cursor.execute("SELECT user_id,phone_number,name,pasport,medical,email,age,id_group,balance FROM students WHERE user_id = %s", (user_id,))
             result = self.cursor.fetchall()
             #result = self.cursor.execute (f"SELECT user_id,phone_number,name,pasport,medical,email,age,id_group FROM students WHERE user_id = '{user_id}'").fetchall()
             return result[0]
@@ -58,6 +58,11 @@ class Database:
         with self.connection:
             self.cursor.execute("SELECT full_reg FROM students WHERE user_id = %s", (user_id,))
             #result = self.cursor.execute (f"SELECT full_reg FROM students WHERE user_id = '{user_id}'")
+            result = self.cursor.fetchone() 
+            return result[0]
+    def get_email(self, user_id):
+        with self.connection:
+            self.cursor.execute("SELECT email FROM students WHERE user_id = %s", (user_id,))
             result = self.cursor.fetchone() 
             return result[0]
 
@@ -90,6 +95,11 @@ class Database:
     def get_data(self,user_id):
         with self.connection:
             self.cursor.execute("SELECT name,pasport,medical,email,age FROM students WHERE user_id = %s", (user_id,))
+            result = self.cursor.fetchall()
+            return result[0]
+    def get_data_of_payment(self,user_id):
+        with self.connection:
+            self.cursor.execute("SELECT phone_number,name,balance FROM students WHERE user_id = %s", (user_id,))
             result = self.cursor.fetchall()
             return result[0]
         
@@ -144,7 +154,8 @@ class Database:
     def set_payment(self,user_id, date,time,amount,currency,charge_id,source):
         with self.connection:
             self.cursor.execute("INSERT INTO payment (id_student, date, time, amount, currency, provider_payment_charge_id, source) SELECT s.id_student, %s, %s, %s, %s, %s, %s FROM students s WHERE s.user_id = %s;", (date,time,amount,currency,charge_id,source,user_id))
-            
+            last_inserted_id = self.cursor.lastrowid
+            return last_inserted_id
     def update_balance(self,user_id,amount):
         with self.connection:
             self.cursor.execute("UPDATE students SET balance = balance + %s WHERE id_student = (SELECT id_student FROM students WHERE user_id = %s);", (amount, user_id))

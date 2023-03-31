@@ -8,6 +8,20 @@ from aiogram.dispatcher.filters import ContentTypeFilter
 import datetime
 from create_bot import dp,bot,db, payment_token
 import math
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from email.utils import COMMASPACE
+import os
+import smtplib
+
+from invoice.generate_send import Generate_invoice, Convert_and_send
 
 async def payment_menu(message: types.Message):
     
@@ -79,13 +93,21 @@ async def operation_money_callback(query: types.CallbackQuery):
         keyboard_add = types.InlineKeyboardMarkup()
         b5 = types.InlineKeyboardButton(text="Назад", callback_data="add_money_back") 
         keyboard_add.add(b5)
-        for transaction in history_array:
-            date = transaction[0].strftime('%d.%m.%Y')
-            time = transaction[1].strftime('%H:%M:%S')
-            amount = transaction[2]
-            operation = "Вывод средств" if "return" in transaction[3] else "Пополнение"
-            message_text += f'{date} {time}: {amount} руб. - {operation}\n'
-        await query.message.answer(message_text,reply_markup=keyboard_add)
+        if len(history_array) !=0:
+
+            for transaction in history_array: #PR сюда добавить "-" если было списание и + если было пополнение
+                date = transaction[0].strftime('%d.%m.%Y')
+                time = transaction[1].strftime('%H:%M:%S')
+                amount = transaction[2]
+                operation = "Пополнение"
+                operation = "Оплата занятия" if "pay_lesson" in transaction[3] else operation
+                operation = "Вывод средств" if "return" in transaction[3] else operation
+                operation = "Отмена занятия" if "cancel_lesson" in transaction[3] else operation
+                sign = "+" if operation in ["Пополнение","Отмена занятия"] else "-"
+                message_text += f'{date} {time}: {sign}{amount} руб. - {operation}\n'
+            await query.message.answer(message_text,reply_markup=keyboard_add)
+        else:
+            await query.message.answer("У вас еще не было транзакций.",reply_markup=keyboard_add)
 
 
 
@@ -120,7 +142,7 @@ def payment(query: types.CallbackQuery):
     invoice = types.Invoice(
         title='Пополнение баланса',
         description=f'Пополнение баланса. Кол-во занятий: {math.floor(int(value) / 500)} ',
-        payload='add_tg_bot',
+        payload='Пополнение через telegram',
         provider_token=payment_token,
         currency='RUB',
         prices=[types.LabeledPrice('Пополнение баланса', int(value)*100)]
@@ -147,12 +169,31 @@ async def checkout_process(pre_checkout_query: PreCheckoutQuery):
 
 @dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)
 async def process_successful_payment(message: Message):
-    successful_payment = message.successful_payment #Для чека нужно получить отсюда 1. id_student 2. date 3. currency - валюта 
-                                                    # 4. Сумма 5.provider_payment_charge_id - номер транзакции
-    
-    db.set_payment(message.from_user.id, datetime.datetime.now().date(), datetime.datetime.now().time(),successful_payment.total_amount / 100,successful_payment.currency, successful_payment.provider_payment_charge_id, successful_payment.invoice_payload )
+    successful_payment = message.successful_payment
+    id_payment = db.set_payment(message.from_user.id, datetime.datetime.now().date(), datetime.datetime.now().time(),successful_payment.total_amount / 100,successful_payment.currency, successful_payment.provider_payment_charge_id, successful_payment.invoice_payload )
     db.update_balance(message.from_user.id,successful_payment.total_amount / 100 )
+    # send_email_payment(message.from_user.id)
+    data = db.get_full_data(message.from_user.id)
+    now = datetime.datetime.now()
+    try:
 
+        Generate_invoice("test.html",f'invoice{id_payment}{message.from_user.id}.html',id_payment, data[2], message.from_user.id,
+                      data[5], "000012345",data[1],'4 цифры карты', f'{now.date()} {now.time()}', successful_payment.invoice_payload, 
+                      f'Пополнение баланса. Кол-во занятий: {math.floor(int(successful_payment.total_amount / 100) / 500)} ',
+                      successful_payment.total_amount / 100, "Пополнение", data[8] )
+    except:
+        print(f"Чек номер {id_payment} не создан. Ошибка!")
+
+
+    
+    try:
+        Convert_and_send(f'invoice{id_payment}{message.from_user.id}.html', f'invoice{id_payment}{message.from_user.id}.pdf',data[5] )
+
+        
+    except:
+        print(f"Чек номер {id_payment} не отправлен. Ошибка!")
+
+    
     await bot.delete_message(message.chat.id, message.message_id-1)
     await bot.delete_message(message.chat.id, message.message_id)
 
@@ -163,10 +204,51 @@ async def process_successful_payment(message: Message):
 
 
 
+def send_email_payment(user_id):
+    # Адрес электронной почты отправителя и получателя
+    sender_email = 'autoschool058@mail.ru'
+    # Пароль для входа в почтовый ящик отправителя
+    sender_password = 'cdjMzQQ96qt6fHnMbxss'
+    recipient_email = db.get_email(user_id)
+
+    # pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
+
+    c = canvas.Canvas("чек.pdf", pagesize=letter)
+
+    # Устанавливаем шрифт для текста
+    c.setFont('DejaVuSans', 12)
+
+    c = canvas.Canvas("чек.pdf", pagesize=letter)
+    c.drawString(2*inch, 10.5*inch, "Название магазина")
+    c.drawString(2*inch, 10*inch, "Адрес магазина")
+    c.drawString(2*inch, 9.5*inch, "Телефон магазина")
+    c.drawString(2*inch, 9*inch, "Чек №1234567890")
+    c.drawString(2*inch, 8.5*inch, "Дата: 27.03.2023")
+    c.drawString(2*inch, 8*inch, "Кассир: Иванов Иван Иванович")
+    c.drawString(2*inch, 7*inch, "Наименование товара 1")
+    c.drawString(4*inch, 7*inch, "1 x 100 руб.")
+    c.drawString(5*inch, 7*inch, "100 руб.")
+    c.drawString(2*inch, 6.5*inch, "Наименование товара 2")
+    c.drawString(4*inch, 6.5*inch, "2 x 50 руб.")
+    c.drawString(5*inch, 6.5*inch, "100 руб.")
+    c.drawString(2*inch, 6*inch, "Итого:")
+    c.drawString(5*inch, 6*inch, "200 руб.")
+    c.save()
+    # Создаем сообщение
+    message = MIMEText('Hello, this is a test email')
+
+    message['From'] = sender_email
+    message['To'] = recipient_email
+    message['Subject'] = 'Test Email'
+
+    with smtplib.SMTP_SSL('smtp.mail.ru', 465) as server:
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, recipient_email, message.as_string())
+
 
     
 def register_handlers(dp: Dispatcher):
-    dp.register_message_handler(payment_menu, lambda message: message.text == "💵 Пополнить баланс" )
+    dp.register_message_handler(payment_menu, lambda message: message.text == "💵 Управление балансом" )
     dp.register_callback_query_handler(operation_money_callback, lambda query: query.data.startswith('operation_'))
     dp.register_callback_query_handler(confirm_return_money, lambda query: query.data == 'confirm_return')
     dp.register_callback_query_handler(add_balance, lambda query: query.data.startswith('add_money_'))

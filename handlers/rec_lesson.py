@@ -27,7 +27,7 @@ async def rec_menu(message: types.Message):
 
     keyboard_rec.add(b1,b2,b3,b4) 
 
-
+    #PR сюда нужно ценую занятия.
     await message.answer('Вы перешли в меню записи! Выберите на что хотите записаться.\n\n Помните, что запись на экзамены формируется только после прохождения всех теоретических и парктических занятий предусмотренных программой обучения.\n\nДни для экзамена формирует МРЭО ГИБДД самостоятельно, обычно 2 дня в неделю. Нажмите на нужный экзамен для просмотра этих дней. \n\n\nОплата экзаменов происходит в МРЭО ГИБДД. Не забудьте мед. справку, паспорт и сертификат об окончании Автошколы.', reply_markup=keyboard_rec)#reply_markup=types.ReplyKeyboardRemove()
 
 
@@ -234,9 +234,15 @@ async def process_calendar_day(callback_query: types.CallbackQuery):
 async def recover(callback_query: types.CallbackQuery):
     if "lesson" in callback_query.data:
         selected_year_str,selected_month_str,selected_day_str, selected_time_str = callback_query.data.split('-')[2:]
-        db.rec_lesson(callback_query.from_user.id, f"{selected_year_str}-{selected_month_str}-{selected_day_str}",f"{selected_time_str}")
-        await callback_query.answer(text="Запись на занятие прошла успешно!")
-        await rec_menu(callback_query.message)    
+        try:
+            db.update_balance(callback_query.from_user.id,-500 ) # PR сюда нужно цену зантия 
+            db.rec_lesson(callback_query.from_user.id, f"{selected_year_str}-{selected_month_str}-{selected_day_str}",f"{selected_time_str}")
+            db.set_payment(callback_query.from_user.id,datetime.datetime.now().date(), datetime.datetime.now().time(),500,"RUB", "id_pay_lesson","pay_lesson")
+            await callback_query.answer(text="Запись на занятие прошла успешно!")
+            await rec_menu(callback_query.message) 
+        except:
+            await callback_query.answer(text="Записаться не удалось. Возможно у Вас не хватает средств на балансе или это время было занято",show_alert=True)
+
     if "t_exam" in callback_query.data:
         selected_year_str,selected_month_str,selected_day_str = callback_query.data.split('-')[2:]
         try:
@@ -250,7 +256,7 @@ async def recover(callback_query: types.CallbackQuery):
     if "p_exam" in callback_query.data:
         selected_year_str,selected_month_str,selected_day_str = callback_query.data.split('-')[2:]
         try:
-
+            
             db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 4)
             await callback_query.answer(text="Запись на практический экзамен прошла успешно!")
             await rec_menu(callback_query.message)
