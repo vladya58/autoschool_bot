@@ -6,6 +6,7 @@ import datetime
 import calendar
 from aiogram import types
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from invoice.generate_send import Generate_invoice, Convert_and_send
 
 
 class UserRec(StatesGroup):
@@ -37,10 +38,17 @@ async def rec(callback: types.CallbackQuery, state: FSMContext):
     p_exam = False
    
     if callback.data == "lesson":
-        lesson = True
-        await callback.message.delete()
-        await bot.answer_callback_query(callback.id)
-        await show_calendar(lesson, t_exam, p_exam, callback.message.chat.id)
+        lessons = db.get_lessons_pr(callback.from_user.id,datetime.datetime.now().date().strftime('%Y-%m-%d'),1)
+        if len(lessons)<5:
+
+            lesson = True
+            await callback.message.delete()
+            await bot.answer_callback_query(callback.id)
+            await show_calendar(lesson, t_exam, p_exam, callback.message.chat.id)
+        else:
+            await callback.answer(text="Вы не можете записаться больше чем на 5 занятий одновременно.",show_alert=True)
+            await rec_menu(callback.message)
+
 
 
     elif callback.data == "t_exam":
@@ -237,8 +245,31 @@ async def recover(callback_query: types.CallbackQuery):
         try:
             db.update_balance(callback_query.from_user.id,-500 ) # PR сюда нужно цену зантия 
             db.rec_lesson(callback_query.from_user.id, f"{selected_year_str}-{selected_month_str}-{selected_day_str}",f"{selected_time_str}")
-            db.set_payment(callback_query.from_user.id,datetime.datetime.now().date(), datetime.datetime.now().time(),500,"RUB", "id_pay_lesson","pay_lesson")
-            await callback_query.answer(text="Запись на занятие прошла успешно!")
+            id_payment = db.set_payment(callback_query.from_user.id,datetime.datetime.now().date(), datetime.datetime.now().time(),500,"RUB", "id_pay_lesson","pay_lesson")
+            
+
+            data = db.get_full_data(callback_query.from_user.id)
+            now = datetime.datetime.now()
+            try:
+
+                Generate_invoice("test.html",f'invoice{id_payment}{callback_query.from_user.id}.html',id_payment, data[2], callback_query.from_user.id,
+                            data[5], "000012345",data[1],'4 цифры карты', f'{now.date()} {now.time()}', "Оплата", 
+                            'Оплата 1 практического занятия',500, "Оплата", data[8] )
+            except:
+                print(f"Чек номер {id_payment} не создан. Ошибка!")
+
+
+            
+            try:
+                Convert_and_send(f'invoice{id_payment}{callback_query.from_user.id}.html', f'invoice{id_payment}{callback_query.from_user.id}.pdf',data[5] )
+
+                
+            except:
+                print(f"Чек номер {id_payment} не отправлен. Ошибка!")
+
+
+
+            await callback_query.answer(text="Запись на занятие прошла успешно! Чек об оплате придет на ваш email")
             await rec_menu(callback_query.message) 
         except:
             await callback_query.answer(text="Записаться не удалось. Возможно у Вас не хватает средств на балансе или это время было занято",show_alert=True)

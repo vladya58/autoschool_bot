@@ -62,17 +62,24 @@ async def confirm_return_money(query: types.CallbackQuery):
 async def operation_money_callback(query: types.CallbackQuery):
     await query.message.delete()
     if "add_money" in query.data:
+        if "@" in db.get_email(query.from_user.id):
 
-        keyboard_add = types.InlineKeyboardMarkup()
-        b1 = types.InlineKeyboardButton(text="500 рублей (1 занятие)", callback_data="add_money_500")
-        b2 = types.InlineKeyboardButton(text="1000 рублей (2 занятия)", callback_data="add_money_1000")
-        b3 = types.InlineKeyboardButton(text="2500 рублей (5 занятий)", callback_data="add_money_2500")
-        b4 = types.InlineKeyboardButton(text="5000 рублей (10 занятий)", callback_data="add_money_5000")
-        b5 = types.InlineKeyboardButton(text="Назад", callback_data="add_money_back") 
-        keyboard_add.add(b1, b2,b3,b4,b5)
+            keyboard_add = types.InlineKeyboardMarkup()
+            b1 = types.InlineKeyboardButton(text="500 рублей (1 занятие)", callback_data="add_money_500")
+            b2 = types.InlineKeyboardButton(text="1000 рублей (2 занятия)", callback_data="add_money_1000")
+            b3 = types.InlineKeyboardButton(text="2500 рублей (5 занятий)", callback_data="add_money_2500")
+            b4 = types.InlineKeyboardButton(text="5000 рублей (10 занятий)", callback_data="add_money_5000")
+            b5 = types.InlineKeyboardButton(text="Назад", callback_data="add_money_back") 
+            keyboard_add.add(b1, b2,b3,b4,b5)
 
-        await query.message.answer('Выберите сумму для пополнения баланса:', reply_markup=keyboard_add)
-    
+            await query.message.answer('Выберите сумму для пополнения баланса:', reply_markup=keyboard_add)
+        else: 
+            keyboard_add = types.InlineKeyboardMarkup()
+            b5 = types.InlineKeyboardButton(text="Назад", callback_data="add_money_back") 
+            keyboard_add.add(b5)
+            await query.message.answer('Ваш email указан некорректно, либо не указан. Проверьте правильность в личном кабинете', reply_markup=keyboard_add)
+
+
     elif "return_money" in query.data:
         
         balance = db.get_balance(query.from_user.id)
@@ -200,50 +207,11 @@ async def process_successful_payment(message: Message):
     keyboard_add = types.InlineKeyboardMarkup()
     b1 = types.InlineKeyboardButton(text="Вернуться", callback_data="add_money_back") 
     keyboard_add.add(b1)
-    await bot.send_message(message.chat.id, f"Ваша оплата на сумму {int(successful_payment.total_amount / 100 )} рублей прошла успешно. Транзакцию можете увидеть в истории операций.",reply_markup=keyboard_add)
+    await bot.send_message(message.chat.id, f"Ваша оплата на сумму {int(successful_payment.total_amount / 100 )} рублей прошла успешно. Чек будет выслан на email",reply_markup=keyboard_add)
 
 
 
-def send_email_payment(user_id):
-    # Адрес электронной почты отправителя и получателя
-    sender_email = 'autoschool058@mail.ru'
-    # Пароль для входа в почтовый ящик отправителя
-    sender_password = 'cdjMzQQ96qt6fHnMbxss'
-    recipient_email = db.get_email(user_id)
 
-    # pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
-
-    c = canvas.Canvas("чек.pdf", pagesize=letter)
-
-    # Устанавливаем шрифт для текста
-    c.setFont('DejaVuSans', 12)
-
-    c = canvas.Canvas("чек.pdf", pagesize=letter)
-    c.drawString(2*inch, 10.5*inch, "Название магазина")
-    c.drawString(2*inch, 10*inch, "Адрес магазина")
-    c.drawString(2*inch, 9.5*inch, "Телефон магазина")
-    c.drawString(2*inch, 9*inch, "Чек №1234567890")
-    c.drawString(2*inch, 8.5*inch, "Дата: 27.03.2023")
-    c.drawString(2*inch, 8*inch, "Кассир: Иванов Иван Иванович")
-    c.drawString(2*inch, 7*inch, "Наименование товара 1")
-    c.drawString(4*inch, 7*inch, "1 x 100 руб.")
-    c.drawString(5*inch, 7*inch, "100 руб.")
-    c.drawString(2*inch, 6.5*inch, "Наименование товара 2")
-    c.drawString(4*inch, 6.5*inch, "2 x 50 руб.")
-    c.drawString(5*inch, 6.5*inch, "100 руб.")
-    c.drawString(2*inch, 6*inch, "Итого:")
-    c.drawString(5*inch, 6*inch, "200 руб.")
-    c.save()
-    # Создаем сообщение
-    message = MIMEText('Hello, this is a test email')
-
-    message['From'] = sender_email
-    message['To'] = recipient_email
-    message['Subject'] = 'Test Email'
-
-    with smtplib.SMTP_SSL('smtp.mail.ru', 465) as server:
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, recipient_email, message.as_string())
 
 
     
