@@ -17,6 +17,111 @@ class Database:
 
         self.cursor = self.connection.cursor()
 
+    def check_rules_teacher(self,user_id):
+        
+        with self.connection:
+            self.cursor.execute("SELECT id_teacher FROM teachers WHERE user_id = %s", (user_id,))
+            result = self.cursor.fetchone()
+            return result[0]
+
+    def get_full_teacher_data(self,user_id):
+        with self.connection:
+            self.cursor.execute(
+                """
+                SELECT t.id_teacher,t.user_id, t.phone_number, t.name, t.age, t.experiance, t.email,
+                c.transmisson, c.brand, c.color, c.number
+                FROM teachers AS t
+                LEFT JOIN cars AS c
+                ON t.id_teacher = c.id_teacher
+                WHERE t.user_id = %s
+                """, 
+                (user_id,)
+            )
+            result = self.cursor.fetchone()
+            return result
+
+    def get_lessons_days(self,id_teacher,datetime,ids=False):
+        with self.connection:
+            coin = ">=" if ids == False else "<="
+            self.cursor.execute(
+            f"""
+            SELECT DISTINCT ON (date) date
+            FROM timetable_practic
+            WHERE id_teacher = {id_teacher} AND date {coin} '{datetime}'
+            ORDER BY date ASC
+            """
+        )
+            result = self.cursor.fetchall()
+            return result
+
+    def get_lesson_on_day(self,id_teacher,datetime):
+         with self.connection:
+            self.cursor.execute(
+            """
+            SELECT id_practic,date,time,id_student
+                FROM timetable_practic
+                WHERE id_teacher = %s AND date = %s
+                """, 
+            (id_teacher, datetime)
+        )
+            result = self.cursor.fetchall()
+            return result
+
+    def check_rul_examen(self,user_id,name_exam):
+        if name_exam == 0:
+            with self.connection:
+                self.cursor.execute(
+                """
+                SELECT 
+                (SELECT count_lessons FROM students WHERE user_id = %s) >= 
+                (SELECT practic_count 
+                FROM students s
+                INNER JOIN groups g ON s.id_group = g.id_group
+                INNER JOIN program p ON g.id_program = p.id_program
+                WHERE s.user_id = %s) as result""", 
+                (user_id,user_id)
+            )
+                
+                result = self.cursor.fetchone()
+            
+
+                return result
+
+    
+    def del_lesson_on_day(self,id_teacher,datetime):
+         
+        with self.connection:
+           
+           return self.cursor.execute("DELETE FROM timetable_practic WHERE date = %s AND id_teacher =%s",(datetime,id_teacher))
+
+    def update_count_lesson(self,id):
+        with self.connection:
+           
+           return self.cursor.execute("UPDATE students SET count_lessons = count_lessons + 1 WHERE id_student = %s",(id,))
+        
+
+    
+    def get_info_lesson(self,id):
+        with self.connection:
+            lst = []
+            self.cursor.execute(
+            """
+            SELECT tp.date, tp.time, s.name, s.phone_number, s.email, c.adres, c.room, s.id_student
+            FROM timetable_practic tp
+            JOIN students s ON tp.id_student = s.id_student
+            JOIN class c ON tp.id_class = c.id_class
+            WHERE tp.id_practic = %s
+                """, 
+            (id,)
+        )
+            
+            result = self.cursor.fetchone()
+            return result
+        
+                
+    
+    
+
     def add_user(self, user_id):
         with self.connection:
             return self.cursor.execute("INSERT INTO 'students' ('user_id') VALUES (?)", (user_id,))
@@ -34,12 +139,20 @@ class Database:
             # result = self.cursor.execute (f"SELECT * FROM students WHERE phone_number = '{phone}'").fetchall()
             return bool(len(result))
 
-    def get_full_data(self,user_id):
-        with self.connection:
-            self.cursor.execute("SELECT user_id,phone_number,name,pasport,medical,email,age,id_group,balance FROM students WHERE user_id = %s", (user_id,))
+    def get_full_data(self,user_id,ids = False):
+        if ids == False:
+            with self.connection:
+                self.cursor.execute("SELECT user_id,phone_number,name,pasport,medical,email,age,id_group,balance FROM students WHERE user_id = %s", (user_id,))
+                result = self.cursor.fetchall()
+                #result = self.cursor.execute (f"SELECT user_id,phone_number,name,pasport,medical,email,age,id_group FROM students WHERE user_id = '{user_id}'").fetchall()
+                return result[0]
+        elif ids == True:
+
+            self.cursor.execute("SELECT user_id,phone_number,name,pasport,medical,email,age,id_group,balance FROM students WHERE id_student = %s", (user_id,))
             result = self.cursor.fetchall()
             #result = self.cursor.execute (f"SELECT user_id,phone_number,name,pasport,medical,email,age,id_group FROM students WHERE user_id = '{user_id}'").fetchall()
             return result[0]
+
 
     def get_balance(self,user_id):
         with self.connection:
@@ -126,7 +239,62 @@ class Database:
             self.cursor.execute("INSERT INTO students_of_exam (id_exam, id_student) SELECT (SELECT id_exam FROM gibdd_exam WHERE date_exam = %s AND id_lesson = %s), id_student FROM students WHERE user_id = %s", (date, id_lesson,user_id,))
             
 
+    def get_lessons_pr(self,user_id,date,id_lesson = 1):
+        with self.connection:
+            self.cursor.execute("SELECT tp.date, tp.time, tp.id_teacher,tp.id_class, tp.id_lesson, tp.id_practic tp FROM timetable_practic tp JOIN students s ON tp.id_student = s.id_student WHERE s.user_id = %s AND tp.id_lesson = %s AND tp.date >= %s", (user_id, id_lesson, date))
+            result = self.cursor.fetchall()
+            return result
+        
+    def get_lessons_tr(self,user_id,id_lesson = 2):
+        with self.connection:
+            self.cursor.execute("""
+                SELECT t.day_week, t.time, t.id_teacher, t.id_class, t.id_lesson, t.id_teory
+                FROM timetable_teory t
+                JOIN students s ON t.id_group = s.id_group
+                WHERE s.user_id = %s AND t.id_lesson = %s
+            """, (user_id, id_lesson))
+            result = self.cursor.fetchone()
 
+        
+
+            return result
+            
+    def get_ihfoles(self, id_teacher, id_class):
+         with self.connection:
+            self.cursor.execute("SELECT name, phone_number, email FROM teachers WHERE id_teacher = %s", (id_teacher,))
+            info_teacher = self.cursor.fetchone()
+            self.cursor.execute("SELECT adres, room FROM class WHERE id_class = %s", (id_class,))
+            info_class = self.cursor.fetchone()
+            return info_teacher, info_class
+
+
+
+    def get_exams_student(self, user_id):
+        with self.connection:
+            self.cursor.execute("SELECT gibdd_exam.id_lesson, gibdd_exam.date_exam, gibdd_exam.name_inspector, students_of_exam.id_rec_exam FROM gibdd_exam JOIN students_of_exam ON gibdd_exam.id_exam = students_of_exam.id_exam JOIN students ON students_of_exam.id_student = students.id_student WHERE gibdd_exam.date_exam >= NOW() AND students.user_id = %s", (user_id,))
+            arr = self.cursor.fetchall()
+            return arr
+
+    
+
+    def del_exam(self,id):
+        with self.connection:
+           return self.cursor.execute("DELETE FROM students_of_exam WHERE id_rec_exam = %s",(id,))
+
+
+
+    def del_lesson(self, id,ids=False):
+        if ids == False:
+            with self.connection:
+                return self.cursor.execute("DELETE FROM timetable_practic WHERE id_practic = %s",(id,))
+
+        elif ids == True:
+            with self.connection:
+                self.cursor.execute("SELECT id_student FROM timetable_practic WHERE id_practic = %s", (id,))
+                id_student = self.cursor.fetchone()[0]
+                self.cursor.execute("DELETE FROM timetable_practic WHERE id_practic = %s", (id,))
+                return id_student
+            
 
 
     def show_date_exam(self,id_lesson,date):
@@ -153,16 +321,83 @@ class Database:
 
     def set_payment(self,user_id, date,time,amount,currency,charge_id,source):
         with self.connection:
-            self.cursor.execute("INSERT INTO payment (id_student, date, time, amount, currency, provider_payment_charge_id, source) SELECT s.id_student, %s, %s, %s, %s, %s, %s FROM students s WHERE s.user_id = %s;", (date,time,amount,currency,charge_id,source,user_id))
-            last_inserted_id = self.cursor.lastrowid
-            return last_inserted_id
-    def update_balance(self,user_id,amount):
+            self.cursor.execute("INSERT INTO payment (id_student, date, time, amount, currency, provider_payment_charge_id, source) SELECT s.id_student, %s, %s, %s, %s, %s, %s FROM students s WHERE s.user_id = %s RETURNING id", (date,time,amount,currency,charge_id,source,user_id))
+            result = self.cursor.fetchone()
+            return result[0]
+    def update_balance(self,user_id,amount,ids = False):
+        if ids == False:
+            with self.connection:
+                self.cursor.execute("UPDATE students SET balance = balance + %s WHERE id_student = (SELECT id_student FROM students WHERE user_id = %s);", (amount, user_id))
+        elif ids == True:
+            with self.connection:
+                self.cursor.execute("UPDATE students SET balance = balance + %s WHERE id_student = %s;", (amount,user_id))
+       
+
+    def get_answer_exam(self,questions):
+        if isinstance(questions, list):
+            ids = tuple(questions)
+        else:
+            ids = questions
         with self.connection:
-            self.cursor.execute("UPDATE students SET balance = balance + %s WHERE id_student = (SELECT id_student FROM students WHERE user_id = %s);", (amount, user_id))
-            
+            self.cursor.execute("SELECT path_to_image, count_answ, right_answ, text, anotation, id_exam_quest FROM exam_pdd WHERE id_exam_quest IN %s", (ids,))
+            result = self.cursor.fetchall()
+            return result
+    def get_qustions(self,id_quiz):
+        with self.connection:
+            self.cursor.execute("SELECT array_q FROM result_quiz WHERE id = %s", (id_quiz,))
+            result = self.cursor.fetchone()
+            return result
         
-            
-            
+
+    def get_qustions_error(self,user_id):
+        with self.connection:
+            self.cursor.execute("SELECT errors FROM result_quiz WHERE id_student = (SELECT id_student FROM students WHERE user_id = %s) ORDER BY id DESC LIMIT 1", (user_id,))
+            result = self.cursor.fetchone()
+            return result[0]
 
 
+    def get_answers_hard(self,):
+        with self.connection:
+            self.cursor.execute("SELECT path_to_image, count_answ, right_answ, text, anotation, id_exam_quest FROM exam_pdd WHERE hard = %s", (True,))
+            result = self.cursor.fetchall()
+            return result
+        
+
+    def get_answers_category(self, category):
+        with self.connection:
+            self.cursor.execute("SELECT path_to_image, count_answ, right_answ, text, anotation, id_exam_quest FROM exam_pdd WHERE notion LIKE %s", ("%" + category + "%",))
+            result = self.cursor.fetchall()
+            return result
+
+    def get_answers_bilet(self, bilet):
+        with self.connection:
+            self.cursor.execute("SELECT path_to_image, count_answ, right_answ, text, anotation, id_exam_quest FROM exam_pdd WHERE bilet = %s", (bilet,))
+            result = self.cursor.fetchall()
+            return result
+
+    def start_quiz(self,user_id,time,mode):
+        with self.connection:
+            self.cursor.execute("INSERT INTO result_quiz(id_student, time_start, mode, result) VALUES ((SELECT id_student FROM students WHERE user_id = %s), %s, %s, %s) RETURNING id",
+    (user_id, time, mode, 0))
+            result = self.cursor.fetchone()
+            return result[0]
+    def set_questions_quiz(self,array,id_quiz):
+        with self.connection:
+
+            self.cursor.execute("UPDATE result_quiz SET array_q = %s WHERE id = %s", (array, id_quiz))
+            
+
+    def get_quiz_result(self,id_quiz):
+        with self.connection:
+            self.cursor.execute("SELECT result FROM result_quiz WHERE id = %s", (id_quiz,))
+            result = self.cursor.fetchone()
+            return result[0]
+
+        
+    def right_answer(self,id_quiz):
+        with self.connection:
+            self.cursor.execute("UPDATE result_quiz SET result = result + 1 WHERE id = %s",(id_quiz,))
+    def wrong_answer(self,id_answer, id_quiz):
+        with self.connection:
+            self.cursor.execute("UPDATE result_quiz SET errors = CONCAT(errors, '%s, ') WHERE id = %s",(id_answer,id_quiz,))
     

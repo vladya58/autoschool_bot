@@ -276,26 +276,37 @@ async def recover(callback_query: types.CallbackQuery):
 
     if "t_exam" in callback_query.data:
         selected_year_str,selected_month_str,selected_day_str = callback_query.data.split('-')[2:]
-        try:
-            db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 3)
-            await callback_query.answer(text="Запись на теоретический экзамен прошла успешно!")
-            await rec_menu(callback_query.message)       
-        except:
+        rule = db.check_rul_examen(callback_query.from_user.id,0)
+        if rule[0]:
+            try:
+                db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 3)
+                await callback_query.answer(text="Запись на теоретический экзамен прошла успешно!")
+                await rec_menu(callback_query.message)       
+            except:
+                await callback_query.answer(text="Записаться не удалось. Возможно вы не прошли все занятия или уже были записаны на эту дату. Вы будете возращены в меню записи.",show_alert=True)
+                await rec_menu(callback_query.message)
+        else:
             await callback_query.answer(text="Записаться не удалось. Возможно вы не прошли все занятия или уже были записаны на эту дату. Вы будете возращены в меню записи.",show_alert=True)
             await rec_menu(callback_query.message)
 
+
     if "p_exam" in callback_query.data:
         selected_year_str,selected_month_str,selected_day_str = callback_query.data.split('-')[2:]
-        try:
+        rule = db.check_rul_examen(callback_query.from_user.id,0)
+        if rule[0]:
+            try:
+                
+                db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 4)
+                await callback_query.answer(text="Запись на практический экзамен прошла успешно!")
+                await rec_menu(callback_query.message)
             
-            db.rec_exam( callback_query.from_user.id,f"{selected_year_str}-{selected_month_str}-{selected_day_str}", 4)
-            await callback_query.answer(text="Запись на практический экзамен прошла успешно!")
-            await rec_menu(callback_query.message)
-        
-        except:
+            except:
+                await callback_query.answer(text="Записаться не удалось. Возможно вы не прошли все занятия или уже были записаны на эту дату. Вы будете возращены в меню записи.",show_alert=True)
+                await rec_menu(callback_query.message)
+        else:
             await callback_query.answer(text="Записаться не удалось. Возможно вы не прошли все занятия или уже были записаны на эту дату. Вы будете возращены в меню записи.",show_alert=True)
             await rec_menu(callback_query.message)
-        
+
         
 
 def register_handlers(dp: Dispatcher):
