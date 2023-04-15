@@ -122,10 +122,34 @@ class Database:
     
     
 
-    def add_user(self, user_id):
+    def add_user(self, phone,group):
         with self.connection:
-            return self.cursor.execute("INSERT INTO 'students' ('user_id') VALUES (?)", (user_id,))
+            return self.cursor.execute("INSERT INTO students (phone_number, id_group) VALUES (%s, %s)", (phone,group ))
+    def add_group(self, count_students, id_teacher,id_program):
+        with self.connection:
+            return self.cursor.execute("INSERT INTO groups (count_students, id_teacher,id_program) VALUES (%s, %s,%s)", (count_students, id_teacher,id_program ))
+    def add_category(self, name):
+        with self.connection:
+            return self.cursor.execute("INSERT INTO category (category_name) VALUES (%s)", (name,))
+    def add_programm(self, programe_name, price, practic_count, teory_count, id_group, id_category):
+        with self.connection:
+            return self.cursor.execute("INSERT INTO program (programe_name, price, practic_count, teory_count, id_group, id_category) VALUES (%s, %s,%s, %s,%s, %s)", (programe_name, price, practic_count, teory_count, id_group, id_category, ))
+            
+    def add_car(self, transmisson, brand, color, number, id_teacher):
+        with self.connection:
+            return self.cursor.execute("INSERT INTO cars (transmisson, brand, color, number, id_teacher) VALUES (%s, %s,%s, %s,%s)", (transmisson, brand, color, number, id_teacher, ))
     
+    def add_class(self, adres, room):
+        with self.connection:
+            return self.cursor.execute("INSERT INTO class (adres, room) VALUES (%s, %s)", (adres, room, ))
+            
+    def add_teacher(self, user_id, phone_number, name, age, experiance, email):
+        with self.connection:
+            return self.cursor.execute("INSERT INTO teachers (user_id, phone_number, name, age, experiance, email) VALUES (%s, %s,%s, %s,%s, %s)", (user_id, phone_number, name, age, experiance, email, ))
+            
+
+
+
     def user_exists(self, user_id):
         with self.connection:
             self.cursor.execute("SELECT * FROM students WHERE user_id = %s", (user_id,))
