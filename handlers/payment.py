@@ -25,17 +25,17 @@ from invoice.generate_send import Generate_invoice, Convert_and_send
 
 async def payment_menu(message: types.Message):
     
+    await bot.delete_message(message.chat.id, message.message_id-1) if message.text == "💵 Управление балансом" else None
     await bot.delete_message(message.chat.id, message.message_id)
     
-    keyboard_balance = types.InlineKeyboardMarkup()
+    keyboard_balance = types.InlineKeyboardMarkup(row_width=1)
     b1 = types.InlineKeyboardButton(text="Пополнить баланс", callback_data="operation_add_money")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
     b2 = types.InlineKeyboardButton(text="Вывести средства", callback_data="operation_return_money")
     b3 = types.InlineKeyboardButton(text="История пополнений", callback_data="operation_history_balance")
-    b4 = types.InlineKeyboardButton(text="Меню", callback_data="menu")
-    keyboard_balance.add(b1,b2,b3,b4) 
+    keyboard_balance.add(b1,b2,b3) 
 
 
-    await message.answer('Вы перешли в меню управления балансом! \n\nБла... бла... бла...', reply_markup=keyboard_balance)#reply_markup=types.ReplyKeyboardRemove()
+    await message.answer('Вы перешли в меню управления балансом! \n\nБла... бла... бла...\n\nЧтобы выйти в главное меню введите команду /menu или нажмите на нее!', reply_markup=keyboard_balance)#reply_markup=types.ReplyKeyboardRemove()
 
 
 

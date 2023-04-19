@@ -15,16 +15,17 @@ from html import escape
 
 async def les_menu(message: types.Message):
     
+    await bot.delete_message(message.chat.id, message.message_id-1) if message.text == "📅 Управление расписанием" else None
     await bot.delete_message(message.chat.id, message.message_id)
+    
     
     keyboard_rec = types.InlineKeyboardMarkup()
     b1 = types.InlineKeyboardButton(text="Занятия", callback_data="view_lessons")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
     b2 = types.InlineKeyboardButton(text="Экзамены", callback_data="view_exams")
-    b4 = types.InlineKeyboardButton(text="Меню", callback_data="menu")
-    keyboard_rec.add(b1,b2,b4) 
+    keyboard_rec.add(b1,b2) 
 
     #PR сюда нужно ценую занятия.
-    await message.answer('Вы перешли в меню управления расписанием! Для продолжения выберите нужный пункт.', reply_markup=keyboard_rec)#reply_markup=types.ReplyKeyboardRemove()
+    await message.answer('Вы перешли в меню управления расписанием! Для продолжения выберите нужный пункт.\n\nЧтобы выйти в главное меню введите команду /menu или нажмите на нее!', reply_markup=keyboard_rec)#reply_markup=types.ReplyKeyboardRemove()
 
 
 async def view_works(query: types.CallbackQuery):

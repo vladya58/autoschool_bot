@@ -25,17 +25,16 @@ class UserState(StatesGroup):
 #@dp.callback_query_handler(lambda callback: callback.data in ["back_to_lk"])
 async def with_puree(callback: types.CallbackQuery,state: FSMContext):
     await callback.message.delete()
-    keyboard_lk = types.InlineKeyboardMarkup()
+    keyboard_lk = types.InlineKeyboardMarkup(row_width=1)
     lk_b1 = types.InlineKeyboardButton(text="Заполнить данные", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
     lk_b2 = types.InlineKeyboardButton(text="Просмотреть данные", callback_data="view_data")
     lk_b3 = types.InlineKeyboardButton(text="Изменить данные", callback_data="edit_data")
     lk_b4 = types.InlineKeyboardButton(text="Просмотр маршрута", callback_data="view_marshrut")
-    lk_b6 = types.InlineKeyboardButton(text="Меню", callback_data="menu", switch_inline_query="/menu")
-
-    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b6) if db.get_full(callback.from_user.id) == False else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b6)
+    
+    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4) if db.get_full(callback.from_user.id) == False else keyboard_lk.add(lk_b2,lk_b3,lk_b4)
 
     
-    await callback.message.answer(f'👤Личный кабинет👤:\nНикнейм {first_name}!\nСтатус: {db.get_full(callback.from_user.id)}\nБаланс: {balance}', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
+    await callback.message.answer(f'👤Личный кабинет👤:\nНикнейм {first_name}!\nСтатус: {db.get_full(callback.from_user.id)}\nБаланс: {balance}\n\nЧтобы выйти в главное меню введите команду /menu или нажмите на нее!', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
 
 # from aiogram.dispatcher.filters import Text
 #@dp.message_handler(Text(equals="👤 Личный кабинет"))
@@ -43,19 +42,16 @@ async def lk(message: Union[types.Message,types.CallbackQuery], state: FSMContex
     await bot.delete_message(message.chat.id, message.message_id-1)
     await bot.delete_message(message.chat.id, message.message_id)
     
-    keyboard_lk = types.InlineKeyboardMarkup()
+    keyboard_lk = types.InlineKeyboardMarkup(row_width=1)
     lk_b1 = types.InlineKeyboardButton(text="Заполнить данные", callback_data="log in")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
     lk_b2 = types.InlineKeyboardButton(text="Просмотреть данные", callback_data="view_data")
     lk_b3 = types.InlineKeyboardButton(text="Изменить данные", callback_data="edit_data")
     lk_b4 = types.InlineKeyboardButton(text="Просмотр маршрута", callback_data="view_marshrut")
-    lk_b5 = types.InlineKeyboardButton(text="История пополнений", callback_data="history_balance")
-    lk_b6 = types.InlineKeyboardButton(text="Меню", callback_data="menu")
     
+    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4) if db.get_full(message.from_user.id) == False else keyboard_lk.add(lk_b2,lk_b3,lk_b4)
 
-    keyboard_lk.add(lk_b1,lk_b2,lk_b3,lk_b4,lk_b6) if db.get_full(message.from_user.id) == False else keyboard_lk.add(lk_b2,lk_b3,lk_b4,lk_b6)
 
-
-    await message.answer(f'👤Личный кабинет👤:\nНикнейм {first_name}!\nСтатус: {db.get_full(message.from_user.id)}\nБаланс: {balance}', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
+    await message.answer(f'👤Личный кабинет👤:\nНикнейм {first_name}!\nСтатус: {db.get_full(message.from_user.id)}\nБаланс: {balance}\n\nЧтобы выйти в главное меню введите команду /menu или нажмите на нее!', reply_markup=keyboard_lk)#reply_markup=types.ReplyKeyboardRemove()
     
     
 #@dp.callback_query_handler(lambda callback: callback.data in ["log in", "view_data"])
@@ -123,12 +119,11 @@ async def auto(callback: types.CallbackQuery, state: FSMContext):
         keyboard_reg = types.InlineKeyboardMarkup()
         b1 = types.InlineKeyboardButton(text="Назад", callback_data="back_to_lk")
         keyboard_reg.add(b1) 
+        id_marshrut = db.get_marshrut(callback.from_user.id)
+        
+        await callback.message.answer_photo(photo=open(f'marshrut/{id_marshrut}.jpg', 'rb'),reply_markup= keyboard_reg)
 
-        with open('1.jpg', 'rb') as photo:
-            await callback.message.answer_photo(InputFile(photo),reply_markup= keyboard_reg)
-
-    if callback.data == "menu":
-        await bot.send_message(callback.from_user.id, '/menu')
+    
         
     
     elif callback.data == "back_to_lk":

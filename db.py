@@ -139,9 +139,9 @@ class Database:
     def add_category(self, name):
         with self.connection:
             return self.cursor.execute("INSERT INTO category (category_name) VALUES (%s)", (name,))
-    def add_programm(self, programe_name, price, practic_count, teory_count, id_group, id_category):
+    def add_programm(self, programe_name, price, practic_count, teory_count, id_group, id_category,marshrut_number):
         with self.connection:
-            return self.cursor.execute("INSERT INTO program (programe_name, price, practic_count, teory_count, id_group, id_category) VALUES (%s, %s,%s, %s,%s, %s)", (programe_name, price, practic_count, teory_count, id_group, id_category, ))
+            return self.cursor.execute("INSERT INTO program (programe_name, price, practic_count, teory_count, id_group, id_category,marshrut_number) VALUES (%s, %s,%s, %s,%s, %s,%s)", (programe_name, price, practic_count, teory_count, id_group, id_category,marshrut_number, ))
             
     def add_car(self, transmisson, brand, color, number, id_teacher):
         with self.connection:
@@ -234,6 +234,11 @@ class Database:
             
             return result[0]
 
+    def get_marshrut(self,user_id):
+        with self.connection:
+            self.cursor.execute("SELECT program.marshrut_number FROM students JOIN program ON students.id_group = program.id_group WHERE students.user_id = %s", (user_id,))
+            result = self.cursor.fetchone()
+            return result[0]
 
     def set_user_id(self,user_id, phone):
         with self.connection:

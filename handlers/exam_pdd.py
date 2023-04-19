@@ -14,7 +14,8 @@ import random
 
 
 async def menu_exam(message: types.Message):
-    
+
+    await bot.delete_message(message.chat.id, message.message_id-1) if message.text == "✅ Пройти экзамен ПДД" else None
     await bot.delete_message(message.chat.id, message.message_id)
     
     keyboard_rec = types.InlineKeyboardMarkup()
@@ -24,13 +25,12 @@ async def menu_exam(message: types.Message):
     b4= types.InlineKeyboardButton(text="Экзамен", callback_data="mode_exam")
     b5= types.InlineKeyboardButton(text="Ошибки", callback_data="mode_errors")
 
-    b6 = types.InlineKeyboardButton(text="Меню", callback_data="menu")
     
 
-    keyboard_rec.add(b1,b2,b3,b4,b5,b6) 
+    keyboard_rec.add(b1,b2,b3,b4,b5) 
 
     #PR сюда нужно ценую занятия.
-    await message.answer('Вы перешли в меню тестирования! Выберите режим теста.', reply_markup=keyboard_rec)#reply_markup=types.ReplyKeyboardRemove()
+    await message.answer('Вы перешли в меню тестирования! Выберите режим теста.\n\nЧтобы выйти в главное меню введите команду /menu или нажмите на нее!', reply_markup=keyboard_rec)#reply_markup=types.ReplyKeyboardRemove()
 
 async def mode_quiz(query: types.CallbackQuery):
     

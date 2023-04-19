@@ -392,7 +392,7 @@ async def ed_op(message: types.Message, state: FSMContext):
             await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
     elif 'newrowProgram' in current_state:
         await state.finish()
-        answer = str(answer) if namerow in ["programe_name"] else int(answer)
+        answer = str(answer) if namerow in ["programe_name","marshrut_number"] else int(answer)
         try:
             db.update_column("program",str(namerow),answer,"id_program",int(idrow))
             keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
@@ -669,7 +669,7 @@ async def add_mode(message: types.Message, state: FSMContext):
     elif 'newProgram' in current_state:
         await state.finish()
         try:
-            db.add_programm(str(values[0]),float(values[1]),int(values[2]),int(values[3]),int(values[4]),int(values[5]))
+            db.add_programm(str(values[0]),float(values[1]),int(values[2]),int(values[3]),int(values[4]),int(values[5]),str(values[6]))
             keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
             b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
             keyboard_rec.add(b1) 
@@ -758,7 +758,7 @@ async def admin_option(query: types.CallbackQuery,state: FSMContext):
             await query.message.answer('Введите букву(ы) категории(без пробелов). Пример "AB"')
             await DBStates.newCategory.set()
         if query.data.split('_')[-2] == "programm":
-            await query.message.answer('Введите через запятую значения "Название программы, стоимость практического занятия, кол-во практических занятий, кол-во теоретических занятий, id группы, id категории". Пример "Новая программа, 1000, 56, 65, 1, 1"')
+            await query.message.answer('Введите через запятую значения "Название программы, стоимость практического занятия, кол-во практических занятий, кол-во теоретических занятий, id группы, id категории,номер маршрута". Пример "Новая программа, 1000, 56, 65, 1, 1,3"')
             await DBStates.newProgram.set()
         if query.data.split('_')[-2] == "car":
             await query.message.answer('Введите через запятую значения "Вид КПП, марка, цвет, номер, id учителя". Пример "Механика, Лада Калина, Серая,  К124УУ58, 1"')
