@@ -21,6 +21,35 @@ class DBStates(StatesGroup):
     newCar = State()
     newClass = State()
     newTeacher = State()
+    newTable = State()
+    newExam = State()
+    delStudent = State()
+    delGroup = State()
+    delCategory = State()
+    delProgram = State()
+    delCar = State()
+    delClass = State()
+    delTeacher = State()
+    delTable = State()
+    delExam = State()
+    editStudent = State()
+    editGroup = State()
+    editCategory = State()
+    editProgram = State()
+    editCar = State()
+    editClass = State()
+    editTeacher = State()
+    editTable = State()
+    editExam = State()
+    newrowStudent = State()
+    newrowGroup = State()
+    newrowCategory = State()
+    newrowProgram = State()
+    newrowCar = State()
+    newrowClass = State()
+    newrowTeacher = State()
+    newrowTable = State()
+    newrowExam = State()
 
 async def admin_sign(message: types.Message,state: FSMContext,id = 0):
     await bot.delete_message(message.chat.id, message.message_id)
@@ -62,15 +91,14 @@ async def admin_menu(message: types.Message):
     keyboard_rec = types.InlineKeyboardMarkup(row_width=2)
     b1 = types.InlineKeyboardButton(text="Студенты", callback_data=f"admin_student")#types.InlineKeyboardButton(text="Авторизоваться", callback_data="log in")
     b2 = types.InlineKeyboardButton(text="Группы", callback_data=f"admin_group")
-    b3 = types.InlineKeyboardButton(text="Расписание", callback_data=f"admin_table") #не сделал
+    b3 = types.InlineKeyboardButton(text="Расписание теория", callback_data=f"admin_table") 
     b4 = types.InlineKeyboardButton(text="Категории", callback_data=f"admin_category")
     b5 = types.InlineKeyboardButton(text="Программы", callback_data=f"admin_programm")
     b6 = types.InlineKeyboardButton(text="Даты Экз.", callback_data=f"admin_exam")#не сделал
     b7 = types.InlineKeyboardButton(text="Машины", callback_data=f"admin_car")
     b8= types.InlineKeyboardButton(text="Классы", callback_data=f"admin_class")
     b9= types.InlineKeyboardButton(text="Учителя", callback_data=f"admin_teachers")
-    b10= types.InlineKeyboardButton(text="Результаты", callback_data=f"admin_result")#не сделал
-    keyboard_rec.add(b1,b2,b3,b4,b5,b6,b7,b8,b9,b10) 
+    keyboard_rec.add(b1,b2,b3,b4,b5,b6,b7,b8,b9) 
     await message.answer('Авторизация успешна! Выберите таблицу для изменения.', reply_markup=keyboard_rec)
 
 async def admin_mode(query: types.CallbackQuery):
@@ -80,6 +108,16 @@ async def admin_mode(query: types.CallbackQuery):
         "Добавить студента": "adm_student_add",
         "Удалить студента": "adm_student_del",
         "Редактировать студента": "adm_student_edit"
+    },
+    "exam": {
+        "Добавить день": "adm_exam_add",
+        "Удалить день": "adm_exam_del",
+        "Редактировать день": "adm_exam_edit"
+    },
+    "table": {
+        "Добавить день": "adm_table_add",
+        "Удалить день": "adm_table_del",
+        "Редактировать день": "adm_table_edit"
     },
     "group": {
         "Добавить группу": "adm_group_add",
@@ -127,12 +165,445 @@ async def admin_mode(query: types.CallbackQuery):
             await query.message.delete()
             await admin_menu(query.message)
             
-                
+async def edit_mode(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    answer = message.text
+    values = answer.split(',')
+    id = int(values[0])
+    await bot.delete_message(message.chat.id, message.message_id-1)
+    await bot.delete_message(message.chat.id, message.message_id)
+    if 'editStudent' in current_state:
+        await state.finish()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        arr = db.info_column('students')
+        for i in range(len(arr)):
+            callback_data = f"ed-students-{arr[i]}-{id}"
+            keyboard_markup.insert(types.InlineKeyboardButton(text=f"{arr[i]}", callback_data=callback_data))
+        keyboard_markup.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f'admin_back_{message.from_user.id}'))
+        await message.answer('Выберите название колонки для изменения', reply_markup=keyboard_markup)
+    elif 'editExam' in current_state:
+        await state.finish()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        arr = db.info_column('gibdd_exam')
+        for i in range(len(arr)):
+            callback_data = f"ed-exam-{arr[i]}-{id}"
+            keyboard_markup.insert(types.InlineKeyboardButton(text=f"{arr[i]}", callback_data=callback_data))
+        keyboard_markup.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f'admin_back_{message.from_user.id}'))
+        await message.answer('Выберите название колонки для изменения', reply_markup=keyboard_markup)    
+    elif 'editTable' in current_state:
+        await state.finish()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        arr = db.info_column('timetable_teory')
+        for i in range(len(arr)):
+            callback_data = f"ed-table-{arr[i]}-{id}"
+            keyboard_markup.insert(types.InlineKeyboardButton(text=f"{arr[i]}", callback_data=callback_data))
+        keyboard_markup.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f'admin_back_{message.from_user.id}'))
+        await message.answer('Выберите название колонки для изменения', reply_markup=keyboard_markup)    
+    elif 'editGroup' in current_state:
+        await state.finish()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        arr = db.info_column('groups')
+        for i in range(len(arr)):
+            callback_data = f"ed-groups-{arr[i]}-{id}"
+            keyboard_markup.insert(types.InlineKeyboardButton(text=f"{arr[i]}", callback_data=callback_data))
+        keyboard_markup.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f'admin_back_{message.from_user.id}'))
+        await message.answer('Выберите название колонки для изменения', reply_markup=keyboard_markup)
+        
+    elif 'editProgram' in current_state:
+        await state.finish()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        arr = db.info_column('program')
+        for i in range(len(arr)):
+            callback_data = f"ed-program-{arr[i]}-{id}"
+            keyboard_markup.insert(types.InlineKeyboardButton(text=f"{arr[i]}", callback_data=callback_data))
+        keyboard_markup.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f'admin_back_{message.from_user.id}'))
+        await message.answer('Выберите название колонки для изменения', reply_markup=keyboard_markup)
+        
+    elif 'editCategory' in current_state:
+        await state.finish()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        arr = db.info_column('category')
+        for i in range(len(arr)):
+            callback_data = f"ed-category-{arr[i]}-{id}"
+            keyboard_markup.insert(types.InlineKeyboardButton(text=f"{arr[i]}", callback_data=callback_data))
+        keyboard_markup.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f'admin_back_{message.from_user.id}'))
+        await message.answer('Выберите название колонки для изменения', reply_markup=keyboard_markup)
+    elif 'editCar' in current_state:
+        await state.finish()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        arr = db.info_column('cars')
+        for i in range(len(arr)):
+            callback_data = f"ed-cars-{arr[i]}-{id}"
+            keyboard_markup.insert(types.InlineKeyboardButton(text=f"{arr[i]}", callback_data=callback_data))
+        keyboard_markup.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f'admin_back_{message.from_user.id}'))
+        await message.answer('Выберите название колонки для изменения', reply_markup=keyboard_markup)
+        
+
+    elif 'editClass' in current_state:
+        await state.finish()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        arr = db.info_column('class')
+        for i in range(len(arr)):
+            callback_data = f"ed-class-{arr[i]}-{id}"
+            keyboard_markup.insert(types.InlineKeyboardButton(text=f"{arr[i]}", callback_data=callback_data))
+        keyboard_markup.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f'admin_back_{message.from_user.id}'))
+        await message.answer('Выберите название колонки для изменения', reply_markup=keyboard_markup)
+        
+
+    elif 'editTeacher' in current_state:
+        await state.finish()
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        arr = db.info_column('teachers')
+        for i in range(len(arr)):
+            callback_data = f"ed-teacher-{arr[i]}-{id}"
+            keyboard_markup.insert(types.InlineKeyboardButton(text=f"{arr[i]}", callback_data=callback_data))
+        keyboard_markup.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f'admin_back_{message.from_user.id}'))
+        await message.answer('Выберите название колонки для изменения', reply_markup=keyboard_markup)
+    
+
+
+async def ed_mode(query: types.CallbackQuery,state: FSMContext):
+    if "student" in query.data: 
+        await query.message.delete()
+        data = {'namerow': query.data.split('-')[-2], 'idrow': query.data.split('-')[-1]}
+        await state.update_data(data)
+        await DBStates.newrowStudent.set()
+        await query.message.answer(f'Введите новое значение для id {data["idrow"]} и столбца {data["namerow"]}')
+    elif 'groups' in query.data:
+        await query.message.delete()
+        data = {'namerow': query.data.split('-')[-2], 'idrow': query.data.split('-')[-1]}
+        await state.update_data(data)
+        await DBStates.newrowGroup.set()
+        await query.message.answer(f'Введите новое значение для id {data["idrow"]} и столбца {data["namerow"]}')
+    elif 'exam' in query.data:
+        await query.message.delete()
+        data = {'namerow': query.data.split('-')[-2], 'idrow': query.data.split('-')[-1]}
+        await state.update_data(data)
+        await DBStates.newrowExam.set()
+        await query.message.answer(f'Введите новое значение для id {data["idrow"]} и столбца {data["namerow"]}')   
+    elif 'table' in query.data:
+        await query.message.delete()
+        data = {'namerow': query.data.split('-')[-2], 'idrow': query.data.split('-')[-1]}
+        await state.update_data(data)
+        await DBStates.newrowTable.set()
+        await query.message.answer(f'Введите новое значение для id {data["idrow"]} и столбца {data["namerow"]}')   
+    elif 'program' in query.data:
+        await query.message.delete()
+        data = {'namerow': query.data.split('-')[-2], 'idrow': query.data.split('-')[-1]}
+        await state.update_data(data)
+        await DBStates.newrowProgram.set()
+        await query.message.answer(f'Введите новое значение для id {data["idrow"]} и столбца {data["namerow"]}')
+        
+    elif 'category' in query.data:
+        await query.message.delete()
+        data = {'namerow': query.data.split('-')[-2], 'idrow': query.data.split('-')[-1]}
+        await state.update_data(data)
+        await DBStates.newrowCategory.set()
+        await query.message.answer(f'Введите новое значение для id {data["idrow"]} и столбца {data["namerow"]}')
+    elif 'cars' in query.data:
+        await query.message.delete()
+        data = {'namerow': query.data.split('-')[-2], 'idrow': query.data.split('-')[-1]}
+        await state.update_data(data)
+        await DBStates.newrowCar.set()
+        await query.message.answer(f'Введите новое значение для id {data["idrow"]} и столбца {data["namerow"]}')
+
+    elif 'class' in query.data:
+        await query.message.delete()
+        data = {'namerow': query.data.split('-')[-2], 'idrow': query.data.split('-')[-1]}
+        await state.update_data(data)
+        await DBStates.newrowClass.set()
+        await query.message.answer(f'Введите новое значение для id {data["idrow"]} и столбца {data["namerow"]}')
+    elif 'teacher' in query.data:
+        await query.message.delete()
+        data = {'namerow': query.data.split('-')[-2], 'idrow': query.data.split('-')[-1]}
+        await state.update_data(data)
+        await DBStates.newrowTeacher.set()
+        await query.message.answer(f'Введите новое значение для id {data["idrow"]} и столбца {data["namerow"]}')
+        
+
+
+async def ed_op(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    data = await state.get_data()
+    namerow = data.get('namerow')
+    idrow = data.get('idrow')
+
+    answer = message.text
+    await bot.delete_message(message.chat.id, message.message_id-1)
+    await bot.delete_message(message.chat.id, message.message_id)
+    if 'newrowStudent' in current_state:
+        await state.finish()
+        answer = int(answer) if namerow in ["user_id","balance","count_lessons"] else str(answer)
+        try:
+            db.update_column("students",str(namerow),answer,"id_student",int(idrow))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Поле изменено', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec) 
+    elif 'newrowExam' in current_state:
+        await state.finish()
+        answer = int(answer) if namerow in ["id_lesson","count_students"] else str(answer)
+        try:
+            db.update_column("gibdd_exam",str(namerow),answer,"id_exam",int(idrow))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Поле изменено', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'newrowTable' in current_state:
+        await state.finish()
+        answer = int(answer) if namerow in ["day_week"] else str(answer)
+        try:
+            db.update_column("timetable_teory",str(namerow),answer,"id_teory",int(idrow))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Поле изменено', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'newrowGroup' in current_state:
+        await state.finish()
+        try:
+            db.update_column("groups",str(namerow),int(answer),"id_group",int(idrow))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Поле изменено', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'newrowProgram' in current_state:
+        await state.finish()
+        answer = str(answer) if namerow in ["programe_name"] else int(answer)
+        try:
+            db.update_column("program",str(namerow),answer,"id_program",int(idrow))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Поле изменено!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'newrowCategory' in current_state:
+        await state.finish()
+        try:
+            db.update_column("category",str(namerow),str(answer),"id_category",int(idrow))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Поле изменено', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'newrowCar' in current_state:
+        await state.finish()
+        try:
+            db.update_column("cars",str(namerow),str(answer),"id_car",int(idrow))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Поле изменено', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+
+    elif 'newrowClass' in current_state:
+        await state.finish()
+        try:
+            db.update_column("class",str(namerow),str(answer),"id_class",int(idrow))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Поле изменено', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+
+    elif 'newrowTeacher' in current_state:
+        await state.finish()
+        answer = int(answer) if namerow in ["user_id","experiance"] else str(answer)
+        try:
+            db.update_column("teachers",str(namerow),answer,"id_teacher",int(idrow))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Поле изменено', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+
+
+async def del_mode(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    answer = message.text
+    values = answer.split(',')
+    await bot.delete_message(message.chat.id, message.message_id-1)
+    await bot.delete_message(message.chat.id, message.message_id)
+    if 'delStudent' in current_state:
+        await state.finish()
+        try:
+            db.del_row('students','id_student',int(values[0]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Студент удален!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec) 
+    elif 'delGroup' in current_state:
+        await state.finish()
+        try:
+            db.del_row('groups','id_group',int(values[0]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Группа удалена!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'delExam' in current_state:
+        await state.finish()
+        try:
+            db.del_row('gibdd_exam','id_exam',int(values[0]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('День удален!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'delTable' in current_state:
+        await state.finish()
+        try:
+            db.del_row('timetable_teory','id_teory',int(values[0]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('День удален!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'delProgram' in current_state:
+        await state.finish()
+        try:
+            db.del_row('program','id_program',int(values[0]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Программа удалена!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'delCategory' in current_state:
+        await state.finish()
+        try:
+            db.del_row('category','id_category',int(values[0]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Категория удалена!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'delCar' in current_state:
+        await state.finish()
+        try:
+            db.del_row('cars','id_car',int(values[0]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Машина удалена!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+
+    elif 'delClass' in current_state:
+        await state.finish()
+        try:
+            db.del_row('class','id_class',int(values[0]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Класс удален!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+
+    elif 'delTeacher' in current_state:
+        await state.finish()
+        try:
+            db.del_row('teachers','id_teacher',int(values[0]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('Учитель удален!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
 
 
 
 
-@dp.message_handler(state=DBStates.newProgram or DBStates.newGroup or DBStates.newStudent or DBStates.newCategory or DBStates.newCar or DBStates.newClass or DBStates.newTeacher )
 async def add_mode(message: types.Message, state: FSMContext):
     current_state = await state.get_state()
     answer = message.text
@@ -153,6 +624,34 @@ async def add_mode(message: types.Message, state: FSMContext):
             keyboard_rec.add(b1) 
             print(f"Ошибка: {str(e)}")
             await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec) 
+    elif 'newTable' in current_state:
+        await state.finish()
+        try:
+            db.add_table(int(values[0]), str(values[1]), int(values[2]),int(values[3]),int(values[4]),int(values[5]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('День добавлен!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
+    elif 'newExam' in current_state:
+        await state.finish()
+        try:
+            db.add_examday(int(values[0]), str(values[1]), int(values[2]),str(values[3]))
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            await message.answer('День добавлен!', reply_markup=keyboard_rec)
+        except Exception as e:
+            keyboard_rec = types.InlineKeyboardMarkup(row_width=1)
+            b1 = types.InlineKeyboardButton(text="Выход", callback_data=f"admin_back_{message.from_user.id}")
+            keyboard_rec.add(b1) 
+            print(f"Ошибка: {str(e)}")
+            await message.answer('Что-то пошло не так. Ошибка', reply_markup=keyboard_rec)
     elif 'newGroup' in current_state:
         await state.finish()
         try:
@@ -246,6 +745,12 @@ async def admin_option(query: types.CallbackQuery,state: FSMContext):
         if query.data.split('_')[-2] == "student":
             await query.message.answer('Введите через запятую значение номера телефона(без +) и группы. Пример "79999999999, 1"')
             await DBStates.newStudent.set()
+        if query.data.split('_')[-2] == "table":
+            await query.message.answer('Введите через запятую значения: День недели (где 0 это пн, а 6 это вскр), время, id_group, id_teacher, id_lesson, id_class. Пример "1, 18:00, 1, 2, 2, 1"')
+            await DBStates.newTable.set()
+        if query.data.split('_')[-2] == "exam":
+            await query.message.answer('Введите через запятую значения: id_lesson (3 для т. экз, 4 для пр. экз),дату, кол-во студентов, имя инспектора. Пример "3,2023-05-28,18,Кусков Иван Андреевич"')
+            await DBStates.newExam.set()
         if query.data.split('_')[-2] == "group":
             await query.message.answer('Введите через запятую значения "Кол-во студентов, id учителя, id программы обучения". Пример "15, 1, 1"')
             await DBStates.newGroup.set()
@@ -264,6 +769,66 @@ async def admin_option(query: types.CallbackQuery,state: FSMContext):
         if query.data.split('_')[-2] == "teachers":
             await query.message.answer('Введите через запятую значения "Логин, Номер телефона (без +), ФИО, дата рождения, опыт преподавания, емаил". Пример "00000, 79636357830, Иванов Иван Иванович, 1900-05-28, 34, email@mail.ru"')
             await DBStates.newTeacher.set()
+    else:
+        await query.message.delete()
+        if query.data.split('_')[-2] == "student":
+            await query.message.answer('Введите id_student для поиска нужной строки')
+            await DBStates.delStudent.set() if "del" in query.data else await DBStates.editStudent.set() 
+        if query.data.split('_')[-2] == "group":
+            await query.message.answer('Введите id_group для поиска нужной строки')
+            await DBStates.delGroup.set() if "del" in query.data else await DBStates.editGroup.set() 
+        if query.data.split('_')[-2] == "table":
+            await query.message.answer('Введите id_teory для поиска нужной строки')
+            await DBStates.delTable.set() if "del" in query.data else await DBStates.editTable.set() 
+        if query.data.split('_')[-2] == "exam":
+            await query.message.answer('Введите id_teory для поиска нужной строки')
+            await DBStates.delExam.set() if "del" in query.data else await DBStates.editExam.set() 
+        if query.data.split('_')[-2] == "category":
+            await query.message.answer('Введите id_category для поиска нужной строки')
+            await DBStates.delCategory.set() if "del" in query.data else await DBStates.editCategory.set() 
+        if query.data.split('_')[-2] == "programm":
+            await query.message.answer('Введите id_programm для поиска нужной строки')
+            await DBStates.delProgram.set() if "del" in query.data else await DBStates.editProgram.set() 
+        if query.data.split('_')[-2] == "car":
+            await query.message.answer('Введите id_car для поиска нужной строки')
+            await DBStates.delCar.set() if "del" in query.data else await DBStates.editCar.set() 
+        if query.data.split('_')[-2] == "class":
+            await query.message.answer('Введите id_class для поиска нужной строки')
+            await DBStates.delClass.set() if "del" in query.data else await DBStates.editClass.set() 
+        if query.data.split('_')[-2] == "teachers":
+            await query.message.answer('Введите id_teacher для поиска нужной строки')
+            await DBStates.delTeacher.set() if "del" in query.data else await DBStates.editTeacher.set() 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -526,8 +1091,12 @@ def register_handlers(dp: Dispatcher):
     dp.register_callback_query_handler(admin_option, lambda query: query.data.startswith('adm_'))
     dp.register_callback_query_handler(return_mode, lambda query: query.data.startswith('t-return'))
     dp.register_callback_query_handler(view_mode, lambda query: query.data.startswith('t-view'))
+    dp.register_callback_query_handler(ed_mode, lambda query: query.data.startswith('ed-'))
     dp.register_callback_query_handler(rules_mode, lambda query: query.data.startswith('t-rul'))
-    dp.register_message_handler(add_mode, state=[DBStates.newProgram, DBStates.newGroup, DBStates.newStudent, DBStates.newCategory, DBStates.newCar, DBStates.newClass, DBStates.newTeacher], content_types=types.ContentTypes.TEXT)
+    dp.register_message_handler(add_mode, state=[DBStates.newProgram,DBStates.newExam,DBStates.newTable, DBStates.newGroup, DBStates.newStudent, DBStates.newCategory, DBStates.newCar, DBStates.newClass, DBStates.newTeacher], content_types=types.ContentTypes.TEXT)
+    dp.register_message_handler(del_mode, state=[DBStates.delProgram,DBStates.delExam,DBStates.delTable, DBStates.delGroup, DBStates.delStudent, DBStates.delCategory, DBStates.delCar, DBStates.delClass, DBStates.delTeacher], content_types=types.ContentTypes.TEXT)
+    dp.register_message_handler(edit_mode, state=[DBStates.editProgram,DBStates.editExam,DBStates.editTable, DBStates.editGroup, DBStates.editStudent, DBStates.editCategory, DBStates.editCar, DBStates.editClass, DBStates.editTeacher], content_types=types.ContentTypes.TEXT)
+    dp.register_message_handler(ed_op, state=[DBStates.newrowProgram,DBStates.newrowExam,DBStates.newrowTable, DBStates.newrowGroup, DBStates.newrowStudent, DBStates.newrowCategory, DBStates.newrowCar, DBStates.newrowClass, DBStates.newrowTeacher], content_types=types.ContentTypes.TEXT)
 
     # dp.register_message_handler(admin_menu, commands=['admin'] )
     

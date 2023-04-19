@@ -121,13 +121,21 @@ class Database:
                 
     
     
-
+    def add_examday(self,id_lesson, date_exam,count_students, name_inspector):
+        with self.connection:
+            return self.cursor.execute("INSERT INTO gibdd_exam (id_lesson, date_exam,count_students, name_inspector) VALUES (%s, %s,%s, %s)", (id_lesson, date_exam,count_students, name_inspector, ))
+    
     def add_user(self, phone,group):
         with self.connection:
             return self.cursor.execute("INSERT INTO students (phone_number, id_group) VALUES (%s, %s)", (phone,group ))
     def add_group(self, count_students, id_teacher,id_program):
         with self.connection:
             return self.cursor.execute("INSERT INTO groups (count_students, id_teacher,id_program) VALUES (%s, %s,%s)", (count_students, id_teacher,id_program ))
+    
+    def add_table(self, day_week, time,id_group,id_teacher,id_lesson,id_class):
+        with self.connection:
+            return self.cursor.execute("INSERT INTO timetable_teory (day_week, time,id_group,id_teacher,id_lesson,id_class) VALUES (%s, %s,%s,%s, %s,%s)", (day_week, time,id_group,id_teacher,id_lesson,id_class, ))
+    
     def add_category(self, name):
         with self.connection:
             return self.cursor.execute("INSERT INTO category (category_name) VALUES (%s)", (name,))
@@ -147,6 +155,47 @@ class Database:
         with self.connection:
             return self.cursor.execute("INSERT INTO teachers (user_id, phone_number, name, age, experiance, email) VALUES (%s, %s,%s, %s,%s, %s)", (user_id, phone_number, name, age, experiance, email, ))
             
+
+    def del_row(self, name, name_colomn,id):
+        with self.connection:
+            return self.cursor.execute("DELETE FROM %s WHERE %s = %s" % (name, name_colomn, id,))
+    
+
+    def info_column(self,table_name):
+        with self.connection:
+            self.cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = %s 
+            AND column_name NOT IN (
+                SELECT column_name 
+                FROM information_schema.key_column_usage 
+                WHERE table_name = %s
+            )
+            AND column_name NOT IN (
+                SELECT conname 
+                FROM pg_constraint 
+                WHERE conrelid = %s::regclass 
+                AND contype IN ('f', 'p')
+            );
+        """, (table_name, table_name, table_name))
+            result = self.cursor.fetchall()
+            columns = [row[0] for row in result]
+            return columns
+        
+    
+
+    def update_column(self,table_name,column_name,value,FK,id):
+        with self.connection:
+            if isinstance(value, str):
+                value = f"'{value}'"
+            self.cursor.execute(f"UPDATE {table_name} SET {column_name} = {value} WHERE {FK} = {id}")
+
+
+
+
+
+
 
 
 
